@@ -29,7 +29,11 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 def root():
-    return {"message": "Chatbot API Server", "version": "1.0.0"}
+    from fastapi.responses import FileResponse
+    import os
+    # Serve frontend/index.html from parent directory
+    frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'index.html')
+    return FileResponse(frontend_path)
 
 
 if __name__ == "__main__":
