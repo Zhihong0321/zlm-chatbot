@@ -230,10 +230,10 @@
                         <div class="glass-effect rounded-xl p-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                             <div class="space-y-3">
-                                <button onclick="showSection('chat')" class="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:shadow-lg transition-all">
+                                <button onclick="showSection('chat'); startNewChat()" class="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:shadow-lg transition-all">
                                     <i class="fas fa-plus mr-2"></i>Start New Chat
                                 </button>
-                                <button onclick="showSection('agents')" class="w-full py-3 px-4 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                <button onclick="showSection('agents'); createAgent()" class="w-full py-3 px-4 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                                     <i class="fas fa-robot mr-2"></i>Create Agent
                                 </button>
                                 <button onclick="showSection('analytics')" class="w-full py-3 px-4 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -258,7 +258,7 @@
                                     </select>
                                     <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">GLM-4.6</span>
                                 </div>
-                                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                                <button onclick="exportChatSession()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                                     <i class="fas fa-download mr-2"></i>Export
                                 </button>
                             </div>
@@ -296,13 +296,14 @@
                         <!-- Input Area -->
                         <div class="glass-effect rounded-b-xl p-4 border-t border-gray-200">
                             <div class="flex gap-3">
-                                <input type="text" placeholder="Type your message..." class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                <button class="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                <input type="text" id="chatInput" placeholder="Type your message..." class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" onkeypress="if(event.key === 'Enter') sendMessage()">
+                                <button onclick="sendMessage()" class="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                                     <i class="fas fa-paper-plane"></i>
                                 </button>
-                                <button class="p-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                                <button onclick="document.getElementById('fileInput').click()" class="p-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                                     <i class="fas fa-paperclip"></i>
                                 </button>
+                                <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(event)">
                             </div>
                         </div>
                     </div>
@@ -312,7 +313,7 @@
                 <div id="agents" class="content-section hidden">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">AI Agents</h2>
-                        <button class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        <button onclick="createAgent()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                             <i class="fas fa-plus mr-2"></i>Create Agent
                         </button>
                     </div>
@@ -324,10 +325,10 @@
                                     <i class="fas fa-code text-purple-600"></i>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="editAgent(1)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-edit text-gray-600"></i>
                                     </button>
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="deleteAgent(1)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-trash text-gray-600"></i>
                                     </button>
                                 </div>
@@ -346,10 +347,10 @@
                                     <i class="fas fa-comments text-blue-600"></i>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="editAgent(2)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-edit text-gray-600"></i>
                                     </button>
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="deleteAgent(2)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-trash text-gray-600"></i>
                                     </button>
                                 </div>
@@ -367,11 +368,14 @@
                                 <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                                     <i class="fas fa-chart-bar text-green-600"></i>
                                 </div>
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-chart-bar text-green-600"></i>
+                                </div>
                                 <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="editAgent(3)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-edit text-gray-600"></i>
                                     </button>
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="deleteAgent(3)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-trash text-gray-600"></i>
                                     </button>
                                 </div>
@@ -391,8 +395,8 @@
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Chat Sessions</h2>
                         <div class="flex gap-3">
-                            <input type="text" placeholder="Search sessions..." class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                            <button class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            <input type="text" id="sessionSearch" placeholder="Search sessions..." class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" onkeyup="searchSessions()">
+                            <button onclick="createSession()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                                 <i class="fas fa-plus mr-2"></i>New Session
                             </button>
                         </div>
@@ -406,10 +410,10 @@
                                     <p class="text-sm text-gray-600">with Code Assistant • 2 hours ago</p>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="exportSession(1)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-download text-gray-600"></i>
                                     </button>
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="deleteSession(1)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-trash text-gray-600"></i>
                                     </button>
                                 </div>
@@ -429,10 +433,10 @@
                                     <p class="text-sm text-gray-600">with Data Analyst • 1 day ago</p>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="exportSession(2)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-download text-gray-600"></i>
                                     </button>
-                                    <button class="p-2 hover:bg-gray-100 rounded transition-colors">
+                                    <button onclick="deleteSession(2)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-trash text-gray-600"></i>
                                     </button>
                                 </div>
@@ -577,6 +581,234 @@
             } catch (error) {
                 console.error('API Error:', error);
                 throw error;
+            }
+        }
+
+        // Chat functionality
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatContainer = document.querySelector('#chat .space-y-4');
+            
+            // Add user message
+            const userMessage = `
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-xs text-gray-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-gray-100 rounded-lg p-4">
+                            <p class="text-gray-900">${message}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                    </div>
+                </div>
+            `;
+            chatContainer.innerHTML += userMessage;
+            
+            input.value = '';
+            
+            try {
+                const response = await makeAPIRequest('/api/v1/chat/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: 1,
+                        agent_id: 1
+                    })
+                });
+                
+                // Add AI response
+                const aiMessage = `
+                    <div class="flex gap-3">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-xs text-purple-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="bg-purple-50 rounded-lg p-4">
+                                <p class="text-gray-900">${response.message}</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Just now</p>
+                        </div>
+                    </div>
+                `;
+                chatContainer.innerHTML += aiMessage;
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+            } catch (error) {
+                console.error('Failed to send message:', error);
+                alert('Failed to send message. Please try again.');
+            }
+        }
+
+        // File upload handler
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name);
+                // TODO: Implement file upload to API
+                alert(`File "${file.name}" selected. Upload functionality will be implemented.`);
+            }
+        }
+
+        // Agent management functions
+        function createAgent() {
+            alert('Agent creation dialog will be implemented.');
+        }
+
+        function editAgent(id) {
+            alert(`Edit agent ${id} functionality will be implemented.`);
+        }
+
+        function deleteAgent(id) {
+            if (confirm(`Are you sure you want to delete agent ${id}?`)) {
+                alert(`Agent ${id} deletion will be implemented.`);
+            }
+        }
+
+        // Session management functions
+        function createSession() {
+            alert('Session creation dialog will be implemented.');
+        }
+
+        function searchSessions() {
+            const searchTerm = document.getElementById('sessionSearch').value;
+            console.log('Searching sessions for:', searchTerm);
+            // TODO: Implement session search
+        }
+
+        function exportSession(id) {
+            alert(`Export session ${id} functionality will be implemented.`);
+        }
+
+        function deleteSession(id) {
+            if (confirm(`Are you sure you want to delete session ${id}?`)) {
+                alert(`Session ${id} deletion will be implemented.`);
+            }
+        }
+
+        // Chat functionality
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatContainer = document.querySelector('#chat .space-y-4');
+            
+            // Add user message
+            const userMessage = `
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-xs text-gray-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-gray-100 rounded-lg p-4">
+                            <p class="text-gray-900">${message}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                    </div>
+                </div>
+            `;
+            chatContainer.innerHTML += userMessage;
+            
+            input.value = '';
+            
+            try {
+                const response = await makeAPIRequest('/api/v1/chat/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: 1,
+                        agent_id: 1
+                    })
+                });
+                
+                // Add AI response
+                const aiMessage = `
+                    <div class="flex gap-3">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-xs text-purple-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="bg-purple-50 rounded-lg p-4">
+                                <p class="text-gray-900">${response.message}</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Just now</p>
+                        </div>
+                    </div>
+                `;
+                chatContainer.innerHTML += aiMessage;
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+            } catch (error) {
+                console.error('Failed to send message:', error);
+                alert('Failed to send message. Please try again.');
+            }
+        }
+
+        // File upload handler
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name);
+                // TODO: Implement file upload to API
+                alert(`File "${file.name}" selected. Upload functionality will be implemented.`);
+            }
+        }
+
+        // Chat export function
+        function exportChatSession() {
+            alert('Chat export functionality will be implemented.');
+        }
+
+        // Start new chat
+        function startNewChat() {
+            const chatContainer = document.querySelector('#chat .space-y-4');
+            if (chatContainer) {
+                chatContainer.innerHTML = '';
+                alert('New chat session started!');
+            }
+        }
+
+        // Agent management functions
+        function createAgent() {
+            alert('Agent creation dialog will be implemented.');
+        }
+
+        function editAgent(id) {
+            alert(`Edit agent ${id} functionality will be implemented.`);
+        }
+
+        function deleteAgent(id) {
+            if (confirm(`Are you sure you want to delete agent ${id}?`)) {
+                alert(`Agent ${id} deletion will be implemented.`);
+            }
+        }
+
+        // Session management functions
+        function createSession() {
+            alert('Session creation dialog will be implemented.');
+        }
+
+        function searchSessions() {
+            const searchTerm = document.getElementById('sessionSearch').value;
+            console.log('Searching sessions for:', searchTerm);
+            // TODO: Implement session search
+        }
+
+        function exportSession(id) {
+            alert(`Export session ${id} functionality will be implemented.`);
+        }
+
+        function deleteSession(id) {
+            if (confirm(`Are you sure you want to delete session ${id}?`)) {
+                alert(`Session ${id} deletion will be implemented.`);
             }
         }
 
