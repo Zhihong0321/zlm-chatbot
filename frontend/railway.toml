@@ -1,0 +1,23 @@
+{
+  "name": "zlm-chatbot-frontend",
+  "services": {
+    "frontend": {
+      "source": {
+        "type": "git",
+        "git": {
+          "url": "https://github.com/Zhiyong0321/zlm-chatbot.git",
+          "branch": "master",
+          "root": "frontend"
+        }
+      },
+      "build": {
+        "builder": "NIXPACKS"
+      },
+      "deploy": {
+        "startCommand": "python -m http.server 8080",
+        "healthcheckPath": "/",
+        "port": 8080
+      }
+    }
+  }
+}
