@@ -368,9 +368,6 @@
                                 <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                                     <i class="fas fa-chart-bar text-green-600"></i>
                                 </div>
-                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-chart-bar text-green-600"></i>
-                                </div>
                                 <div class="flex gap-2">
                                     <button onclick="editAgent(3)" class="p-2 hover:bg-gray-100 rounded transition-colors">
                                         <i class="fas fa-edit text-gray-600"></i>
@@ -441,7 +438,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <p class="text-sm text-gray-600 mb-3">Can you analyze this dataset and provide insights? I'll help you analyze the dataset...</p>
+                            <p class="text-sm text-gray-600 mb-3">Can you analyze this dataset and provide insights? I'll help you analyze dataset...</p>
                             <div class="flex items-center gap-4 text-xs text-gray-500">
                                 <span><i class="fas fa-comment mr-1"></i>8 messages</span>
                                 <span><i class="fas fa-clock mr-1"></i>20 minutes</span>
@@ -581,113 +578,6 @@
             } catch (error) {
                 console.error('API Error:', error);
                 throw error;
-            }
-        }
-
-        // Chat functionality
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            if (!message) return;
-
-            const chatContainer = document.querySelector('#chat .space-y-4');
-            
-            // Add user message
-            const userMessage = `
-                <div class="flex gap-3">
-                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user text-xs text-gray-600"></i>
-                    </div>
-                    <div class="flex-1">
-                        <div class="bg-gray-100 rounded-lg p-4">
-                            <p class="text-gray-900">${message}</p>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">Just now</p>
-                    </div>
-                </div>
-            `;
-            chatContainer.innerHTML += userMessage;
-            
-            input.value = '';
-            
-            try {
-                const response = await makeAPIRequest('/api/v1/chat/chat', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        message: message,
-                        session_id: 1,
-                        agent_id: 1
-                    })
-                });
-                
-                // Add AI response
-                const aiMessage = `
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-robot text-xs text-purple-600"></i>
-                        </div>
-                        <div class="flex-1">
-                            <div class="bg-purple-50 rounded-lg p-4">
-                                <p class="text-gray-900">${response.message}</p>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1">Just now</p>
-                        </div>
-                    </div>
-                `;
-                chatContainer.innerHTML += aiMessage;
-                
-                // Scroll to bottom
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-                
-            } catch (error) {
-                console.error('Failed to send message:', error);
-                alert('Failed to send message. Please try again.');
-            }
-        }
-
-        // File upload handler
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                console.log('File selected:', file.name);
-                // TODO: Implement file upload to API
-                alert(`File "${file.name}" selected. Upload functionality will be implemented.`);
-            }
-        }
-
-        // Agent management functions
-        function createAgent() {
-            alert('Agent creation dialog will be implemented.');
-        }
-
-        function editAgent(id) {
-            alert(`Edit agent ${id} functionality will be implemented.`);
-        }
-
-        function deleteAgent(id) {
-            if (confirm(`Are you sure you want to delete agent ${id}?`)) {
-                alert(`Agent ${id} deletion will be implemented.`);
-            }
-        }
-
-        // Session management functions
-        function createSession() {
-            alert('Session creation dialog will be implemented.');
-        }
-
-        function searchSessions() {
-            const searchTerm = document.getElementById('sessionSearch').value;
-            console.log('Searching sessions for:', searchTerm);
-            // TODO: Implement session search
-        }
-
-        function exportSession(id) {
-            alert(`Export session ${id} functionality will be implemented.`);
-        }
-
-        function deleteSession(id) {
-            if (confirm(`Are you sure you want to delete session ${id}?`)) {
-                alert(`Session ${id} deletion will be implemented.`);
             }
         }
 
