@@ -4,7 +4,7 @@
     "buildCommand": "pip install -r requirements.txt"
   },
   "deploy": {
-    "startCommand": "python start_production.py",
+    "startCommand": "python zero_fallback.py",
     "healthcheckPath": "/api/v1/ui/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
