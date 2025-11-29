@@ -30,14 +30,9 @@ def main():
     # Set environment for production
     os.environ["ENVIRONMENT"] = "production"
     
-    # CRITICAL: Fix database schema first
-    if not run_command("python fix_database_schema.py", "Database schema fix"):
-        print("❌ Database schema fix failed!")
-        sys.exit(1)
-    
-    # Run safe database setup (preserves existing data)
-    if not run_command("python safe_db_setup.py", "Safe database setup"):
-        print("❌ Database setup failed!")
+    # CRITICAL: Ultimate schema fix - drop ALL tables and recreate
+    if not run_command("python ultimate_schema_fix.py", "Ultimate schema fix"):
+        print("❌ Ultimate schema fix failed!")
         sys.exit(1)
     
     # Start the FastAPI server

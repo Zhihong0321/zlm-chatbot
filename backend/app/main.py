@@ -5,8 +5,8 @@ from app.api.api_v1 import api_router
 from app.db.database import engine
 from app.models import models
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
+# CRITICAL: DO NOT create tables here - Railway startup handles it
+# models.Base.metadata.create_all(bind=engine)  # REMOVED - handled by start_production.py
 
 app = FastAPI(
     title="Chatbot API Server",
