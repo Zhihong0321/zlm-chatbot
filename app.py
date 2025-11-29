@@ -1,11 +1,16 @@
-from fastapi import FastAPI
 import sys
 import os
 
-# Add backend to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+# Add backend directory to Python path
+backend_path = os.path.join(os.path.dirname(__file__), 'backend')
+sys.path.insert(0, backend_path)
 
-from backend.app.main import app
+# Add backend/app directory to Python path  
+app_path = os.path.join(backend_path, 'app')
+sys.path.insert(0, app_path)
+
+from fastapi import FastAPI
+from main import app
 
 if __name__ == "__main__":
     import uvicorn
