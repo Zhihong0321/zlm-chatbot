@@ -30,9 +30,9 @@ def main():
     # Set environment for production
     os.environ["ENVIRONMENT"] = "production"
     
-    # CRITICAL: Battle-ready validation
-    if not run_command("python battle_ready_check.py", "Battle-ready validation"):
-        print("❌ Battle-ready validation failed!")
+    # CRITICAL: Fix database schema first
+    if not run_command("python fix_database_schema.py", "Database schema fix"):
+        print("❌ Database schema fix failed!")
         sys.exit(1)
     
     # Run safe database setup (preserves existing data)
