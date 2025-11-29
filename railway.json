@@ -4,7 +4,7 @@
     "buildCommand": "cd frontend && npm install && npm run build && cd .. && pip install -r backend/requirements.txt"
   },
   "deploy": {
-    "startCommand": "python app.py",
+    "startCommand": "cd backend && python reset_prod_db.py && cd .. && python app.py",
     "healthcheckPath": "/",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
