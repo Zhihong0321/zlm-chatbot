@@ -15,8 +15,14 @@ def create_agent_endpoint(agent: AgentCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[Agent])
 def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    agents = get_agents(db, skip=skip, limit=limit)
-    return agents
+    try:
+        agents = get_agents(db, skip=skip, limit=limit)
+        return agents
+    except Exception as e:
+        # Log the specific error causing the 500
+        import logging
+        logging.error(f"Error listing agents: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
 
 
 @router.get("/{agent_id}", response_model=Agent)
