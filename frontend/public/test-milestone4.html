@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone 4 Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        a {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Milestone 4 - Chat Interface & Playground</h1>
+    <p>This test validates the implementation of Milestone 4 requirements.</p>
+
+    <div class="test-section">
+        <h2>🚀 Quick Tests</h2>
+        <div class="status info">Testing backend connectivity...</div>
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🌐 Access Points</h2>
+        <p>Open these links to test the enhanced interface:</p>
+        <a href="http://localhost:5173/" target="_blank">🏠 Dashboard</a>
+        <a href="http://localhost:5173/chat" target="_blank">💬 New Chat</a>
+        <a href="http://localhost:5173/chat/1" target="_blank">💬 Existing Chat</a>
+        <a href="http://localhost:5173/playground" target="_blank">🎮 Agent Playground</a>
+        <a href="http://localhost:5173/agents" target="_blank">🤖 Agent Management</a>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Milestone 4 Features to Test</h2>
+        <h3>Real-time Chat Interface</h3>
+        <ul>
+            <li>✅ Live message sending and receiving</li>
+            <li>✅ Message threading with user/assistant distinction</li>
+            <li>✅ Typing indicators during AI responses</li>
+            <li>✅ Auto-scrolling to latest messages</li>
+            <li>✅ Keyboard shortcuts (Enter to send, Shift+Enter for new line)</li>
+        </ul>
+
+        <h3>Agent Selection & Switching</h3>
+        <ul>
+            <li>✅ Agent picker in chat interface</li>
+            <li>✅ Dynamic agent switching within conversations</li>
+            <li>✅ Agent information display (name, model, capabilities)</li>
+            <li>✅ Agent-specific system prompts working</li>
+        </ul>
+
+        <h3>Chat Playground</h3>
+        <ul>
+            <li>✅ Dedicated playground page for testing agents</li>
+            <li>✅ Temporary session creation for testing</li>
+            <li>✅ Agent comparison functionality</li>
+            <li>✅ Quick test questions library</li>
+            <li>✅ Test history tracking</li>
+        </ul>
+
+        <h3>Message Management</h3>
+        <ul>
+            <li>✅ Message history persistence</li>
+            <li>✅ Message editing and deletion (user messages)</li>
+            <li>✅ Timestamp display and formatting</li>
+            <li>✅ Message status indicators (sent, delivered, processing)</li>
+            <li>✅ Copy message functionality</li>
+        </ul>
+
+        <h3>File Upload Integration</h3>
+        <ul>
+            <li>✅ Knowledge file upload in chat interface</li>
+            <li>✅ File type validation and preview</li>
+            <li>✅ Knowledge context injection working</li>
+            <li>✅ File management within conversations</li>
+        </ul>
+
+        <h3>User Experience</h3>
+        <ul>
+            <li>✅ Smooth animations and transitions</li>
+            <li>✅ Keyboard shortcuts and accessibility</li>
+            <li>✅ Message formatting and code highlighting</li>
+            <li>✅ Error handling with user-friendly messages</li>
+            <li>✅ Responsive design on mobile devices</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Test Scenarios</h2>
+        <h3>Scenario 1: New Chat with Agent Selection</h3>
+        <ol>
+            <li>Navigate to <a href="http://localhost:5173/chat" target="_blank">New Chat</a></li>
+            <li>Select an agent from the dropdown</li>
+            <li>Send a message like "Hello, what can you help me with?"</li>
+            <li>Verify the response and agent information display</li>
+        </ol>
+
+        <h3>Scenario 2: Agent Switching</h3>
+        <ol>
+            <li>Open an existing <a href="http://localhost:5173/chat/1" target="_blank">chat session</a></li>
+            <li>Use the agent switcher dropdown to change agents</li>
+            <li>Send a message to verify the new agent is being used</li>
+            <li>Check the agent info panel for details</li>
+        </ol>
+
+        <h3>Scenario 3: Playground Testing</h3>
+        <ol>
+            <li>Navigate to <a href="http://localhost:5173/playground" target="_blank">Agent Playground</a></li>
+            <li>Select an agent to test</li>
+            <li>Use a quick test question or write your own</li>
+            <li>Review the response and metadata</li>
+            <li>Test multiple agents for comparison</li>
+        </ol>
+
+        <h3>Scenario 4: File Upload</h3>
+        <ol>
+            <li>In any chat session, click "Upload File"</li>
+            <li>Select a text file under 50KB</li>
+            <li>Verify the upload completes successfully</li>
+            <li>Send a message referencing the uploaded content</li>
+        </ol>
+
+        <h3>Scenario 5: Message Management</h3>
+        <ol>
+            <li>Send a user message in any chat</li>
+            <li>Hover over the message to reveal action buttons</li>
+            <li>Test the copy functionality</li>
+            <li>Test the edit functionality (user messages only)</li>
+        </ol>
+    </div>
+
+    <script>
+        // Test backend connectivity
+        async function testBackend() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                // Test health endpoint
+                const healthResponse = await fetch('http://localhost:8000/api/v1/ui/health');
+                if (healthResponse.ok) {
+                    const health = await healthResponse.json();
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Backend Health: ${health.status}</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Backend Health: Failed</div>`;
+                }
+                
+                // Test agents endpoint
+                const agentsResponse = await fetch('http://localhost:8000/api/v1/agents');
+                if (agentsResponse.ok) {
+                    const agents = await agentsResponse.json();
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Agents Endpoint: ${agents.length} agents available</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Agents Endpoint: Failed</div>`;
+                }
+                
+                // Test sessions endpoint
+                const sessionsResponse = await fetch('http://localhost:8000/api/v1/sessions');
+                if (sessionsResponse.ok) {
+                    const sessions = await sessionsResponse.json();
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Sessions Endpoint: ${sessions.length} sessions available</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Sessions Endpoint: Failed</div>`;
+                }
+                
+                // Test frontend accessibility
+                const frontendResponse = await fetch('http://localhost:5173');
+                if (frontendResponse.ok) {
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Frontend: Accessible at http://localhost:5173</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Frontend: Not accessible</div>`;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="status fail">❌ Connection Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Run tests on page load
+        testBackend();
+    </script>
+</body>
+</html>

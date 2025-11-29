@@ -1,0 +1,73 @@
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
+Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class Agent(Base):
+    __tablename__ = "agents"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    system_prompt = Column(Text, nullable=False)
+    model = Column(String(50), nullable=False, default="glm-4.5")
+    temperature = Column(Float, default=0.7)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    chat_sessions = relationship("ChatSession", back_populates="agent")
+
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    message_count = Column(Integer, default=0)
+    is_archived = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    agent = relationship("Agent", back_populates="chat_sessions")
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+    knowledge_files = relationship("SessionKnowledge", back_populates="session", cascade="all, delete-orphan")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
+    role = Column(String(20), nullable=False)  # 'user', 'assistant', 'system'
+    content = Column(Text, nullable=False)
+    model = Column(String(50))
+    reasoning_content = Column(Text)
+    token_usage = Column(JSON)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    session = relationship("ChatSession", back_populates="messages")
+
+
+class SessionKnowledge(Base):
+    __tablename__ = "session_knowledge"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
+    filename = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    file_size = Column(Integer)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    session = relationship("ChatSession", back_populates="knowledge_files")

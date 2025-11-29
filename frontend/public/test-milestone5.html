@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone 5 Test - Session Management & Threads Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .feature-section {
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+        .checklist {
+            list-style-type: none;
+            padding: 0;
+        }
+        .checklist li {
+            margin: 8px 0;
+            padding: 5px;
+            border-left: 3px solid #dee2e6;
+        }
+        .checklist li.completed {
+            border-left-color: #28a745;
+            background-color: #f8fff9;
+        }
+        .checklist li.in-progress {
+            border-left-color: #ffc107;
+            background-color: #fff8e1;
+        }
+        a {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .api-test {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Milestone 5 - Session Management & Threads Viewer</h1>
+    <p>Testing advanced session management features with search, analytics, and bulk operations.</p>
+
+    <div class="test-section">
+        <h2>🚀 Quick Tests</h2>
+        <div class="status info">Testing enhanced backend connectivity...</div>
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🌐 Access Points</h2>
+        <p>Open these links to test the enhanced session management:</p>
+        <a href="http://localhost:5173/" target="_blank">🏠 Enhanced Dashboard</a>
+        <a href="http://localhost:5173/chat" target="_blank">💬 Chat with Session Tracking</a>
+        <a href="http://localhost:5173/playground" target="_blank">🎮 Agent Playground</a>
+        <a href="http://localhost:5173/agents" target="_blank">🤖 Agent Management</a>
+    </div>
+
+    <div class="feature-section">
+        <h2>✅ Milestone 5 Features Implemented</h2>
+        
+        <h3>Enhanced Session Dashboard</h3>
+        <ul class="checklist">
+            <li class="completed">✅ Grid/list view of all chat sessions</li>
+            <li class="completed">✅ Session cards with preview and metadata</li>
+            <li class="completed">✅ Sorting options (date, message count, title)</li>
+            <li class="completed">✅ Loading states and pagination support</li>
+            <li class="completed">✅ Real-time session updates</li>
+        </ul>
+
+        <h3>Advanced Search & Filter Functionality</h3>
+        <ul class="checklist">
+            <li class="completed">✅ Text search through conversation content</li>
+            <li class="completed">✅ Filter by agent, date range, message count</li>
+            <li class="completed">✅ Real-time search results</li>
+            <li class="completed">✅ Search result highlighting</li>
+            <li class="completed">✅ Advanced search with multiple filters</li>
+        </ul>
+
+        <h3>Enhanced Session Operations</h3>
+        <ul class="checklist">
+            <li class="completed">✅ Single session deletion with confirmation</li>
+            <li class="completed">✅ Bulk selection and deletion</li>
+            <li class="completed">✅ Session export (JSON, TXT formats)</li>
+            <li class="completed">✅ Session archiving and restoration</li>
+            <li class="completed">✅ Session metadata display</li>
+        </ul>
+
+        <h3>Session Analytics Dashboard</h3>
+        <ul class="checklist">
+            <li class="completed">✅ Message count per session analytics</li>
+            <li class="completed">✅ Activity timeline visualization</li>
+            <li class="completed">✅ Agent usage statistics</li>
+            <li class="completed">✅ Token usage tracking per session</li>
+            <li class="completed">✅ Interactive analytics panel</li>
+        </ul>
+
+        <h3>Performance & Navigation Enhancements</h3>
+        <ul class="checklist">
+            <li class="completed">✅ Efficient session loading</li>
+            <li class="completed">✅ Virtual scrolling preparation</li>
+            <li class="completed">✅ Lazy loading for session details</li>
+            <li class="completed">✅ Caching for frequently accessed data</li>
+            <li class="completed">✅ Seamless navigation between components</li>
+        </ul>
+    </div>
+
+    <div class="grid">
+        <div class="test-section">
+            <h2>🔍 Test Scenarios</h2>
+            <h3>Scenario 1: Advanced Session Search</h3>
+            <ol>
+                <li>Navigate to the main dashboard</li>
+                <li>Click "Advanced" in search</li>
+                <li>Set filters (agent, date range, min messages)</li>
+                <li>Verify filtered results appear correctly</li>
+                <li>Test clearing search functionality</li>
+            </ol>
+
+            <h3>Scenario 2: Session Analytics</h3>
+            <ol>
+                <li>Click "📊 Analytics" button on dashboard</li>
+                <li>Review summary cards and statistics</li>
+                <li>Change timeline timeframe (7/14/30 days)</li>
+                <li>Verify agent usage breakdown</li>
+                <li>Test real-time data updates</li>
+            </ol>
+
+            <h3>Scenario 3: Bulk Operations</h3>
+            <ol>
+                <li>Click "Select" button in dashboard</li>
+                <li>Select multiple sessions using checkboxes</li>
+                <li>Test bulk archive functionality</li>
+                <li>Test bulk delete functionality</li>
+                <li>Verify confirmation dialogs work</li>
+            </ol>
+
+            <h3>Scenario 4: Session Management</h3>
+            <ol>
+                <li>Hover over session cards to reveal actions</li>
+                <li>Test individual session archiving</li>
+                <li>Test individual session deletion</li>
+                <li>Test session export functionality</li>
+                <li>Verify session metadata display</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 API Endpoints Testing</h2>
+            <h3>Enhanced Session Endpoints</h3>
+            <div class="api-test">
+                GET /api/v1/sessions/search?q=...&agent_id=...&date_from=...&date_to=...&min_messages=...
+            </div>
+            <div class="api-test">
+                GET /api/v1/sessions/analytics/summary
+            </div>
+            <div class="api-test">
+                GET /api/v1/sessions/activity/timeline?days=...
+            </div>
+            <div class="api-test">
+                POST /api/v1/sessions/bulk-delete
+            </div>
+            <div class="api-test">
+                POST /api/v1/sessions/{id}/archive
+            </div>
+            <div class="api-test">
+                GET /api/v1/sessions/{id}/analytics
+            </div>
+
+            <h3>Enhanced Session Features</h3>
+            <div class="api-test">
+                • Message count tracking on sessions
+                • Archive status for soft deletion
+                • Enhanced session metadata
+                • Reasoning content support
+                • Improved error handling
+            </div>
+        </div>
+    </div>
+
+    <div class="feature-section">
+        <h2>📊 New Data Models & Features</h2>
+        
+        <h3>Enhanced ChatSession Model</h3>
+        <ul>
+            <li><strong>message_count</strong>: Automatic message count tracking</li>
+            <li><strong>is_archived</strong>: Soft deletion for archiving</li>
+            <li><strong>Enhanced metadata</strong>: Better session information</li>
+        </ul>
+
+        <h3>Enhanced ChatMessage Model</h3>
+        <ul>
+            <li><strong>reasoning_content</strong>: AI thinking process storage</li>
+            <li><strong>Improved token tracking</strong>: Better usage analytics</li>
+        </ul>
+
+        <h3>New Analytics Features</h3>
+        <ul>
+            <li><strong>Timeline visualization</strong>: Activity over time</li>
+            <li><strong>Agent usage stats</strong>: Agent performance tracking</li>
+            <li><strong>Session analytics</strong>: Per-session detailed metrics</li>
+            <li><strong>Summary cards</strong>: Quick overview statistics</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Performance Improvements</h2>
+        <h3>Optimizations Implemented</h3>
+        <ul>
+            <li><strong>Efficient Querying</strong>: Optimized database queries for better performance</li>
+            <li><strong>Caching Strategy</strong>: React Query caching for frequently accessed data</li>
+            <li><strong>Lazy Loading</strong>: Components load data as needed</li>
+            <li><strong>Bulk Operations</strong>: Efficient batch operations for multiple sessions</li>
+            <li><strong>Pagination Support</strong>: Prepared for large datasets</li>
+        </ul>
+    </div>
+
+    <script>
+        // Test enhanced backend connectivity
+        async function testBackend() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                // Test health endpoint
+                const healthResponse = await fetch('http://localhost:8000/api/v1/ui/health');
+                if (healthResponse.ok) {
+                    const health = await healthResponse.json();
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Backend Health: ${health.status}</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Backend Health: Failed</div>`;
+                }
+                
+                // Test enhanced sessions endpoint
+                const sessionsResponse = await fetch('http://localhost:8000/api/v1/sessions');
+                if (sessionsResponse.ok) {
+                    const sessions = await sessionsResponse.json();
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Enhanced Sessions Endpoint: ${sessions.length} sessions</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Enhanced Sessions Endpoint: Failed</div>`;
+                }
+                
+                // Test analytics endpoint
+                const analyticsResponse = await fetch('http://localhost:8000/api/v1/sessions/analytics/summary');
+                if (analyticsResponse.ok) {
+                    const analytics = await analyticsResponse.json();
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Analytics Endpoint: Working</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Analytics Endpoint: Failed</div>`;
+                }
+                
+                // Test search endpoint
+                const searchResponse = await fetch('http://localhost:8000/api/v1/sessions/search?q=test');
+                if (searchResponse.ok) {
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Search Endpoint: Working</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Search Endpoint: Failed</div>`;
+                }
+                
+                // Test timeline endpoint
+                const timelineResponse = await fetch('http://localhost:8000/api/v1/sessions/activity/timeline?days=7');
+                if (timelineResponse.ok) {
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Timeline Endpoint: Working</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Timeline Endpoint: Failed</div>`;
+                }
+                
+                // Test agents endpoint
+                const agentsResponse = await fetch('http://localhost:8000/api/v1/agents');
+                if (agentsResponse.ok) {
+                    const agents = await agentsResponse.json();
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Agents Endpoint: ${agents.length} agents available</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Agents Endpoint: Failed</div>`;
+                }
+                
+                // Test frontend accessibility
+                const frontendResponse = await fetch('http://localhost:5173');
+                if (frontendResponse.ok) {
+                    resultsDiv.innerHTML += `<div class="status pass">✅ Frontend: Enhanced interface accessible at http://localhost:5173</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="status fail">❌ Frontend: Not accessible</div>`;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="status fail">❌ Connection Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Run tests on page load
+        testBackend();
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements.txt",
+    "startCommand": "sh build-railway.sh"
+  },
+  "deploy": {
+    "startCommand": "sh build-railway.sh",
+    "healthcheckPath": "/api/v1/ui/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}

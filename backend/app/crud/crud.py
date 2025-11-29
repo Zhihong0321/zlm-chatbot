@@ -1,0 +1,152 @@
+from sqlalchemy.orm import Session
+from sqlalchemy import func, desc
+from typing import List, Optional
+from app.models.models import Agent, ChatSession, ChatMessage, SessionKnowledge
+from app.schemas.schemas import AgentCreate, AgentUpdate, ChatSessionCreate, ChatMessageCreate, SessionKnowledgeCreate
+
+
+def get_agent(db: Session, agent_id: int) -> Optional[Agent]:
+    return db.query(Agent).filter(Agent.id == agent_id).first()
+
+
+def get_agents(db: Session, skip: int = 0, limit: int = 100) -> List[Agent]:
+    return db.query(Agent).offset(skip).limit(limit).all()
+
+
+def create_agent(db: Session, agent: AgentCreate) -> Agent:
+    db_agent = Agent(**agent.dict())
+    db.add(db_agent)
+    db.commit()
+    db.refresh(db_agent)
+    return db_agent
+
+
+def update_agent(db: Session, agent_id: int, agent: AgentUpdate) -> Optional[Agent]:
+    db_agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    if not db_agent:
+        return None
+    
+    update_data = agent.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_agent, key, value)
+    
+    db.commit()
+    db.refresh(db_agent)
+    return db_agent
+
+
+def delete_agent(db: Session, agent_id: int) -> bool:
+    db_agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    if not db_agent:
+        return False
+    
+    db.delete(db_agent)
+    db.commit()
+    return True
+
+
+def get_chat_session(db: Session, session_id: int) -> Optional[ChatSession]:
+    return db.query(ChatSession).filter(ChatSession.id == session_id).first()
+
+
+def get_chat_sessions(db: Session, skip: int = 0, limit: int = 100, include_archived: bool = False) -> List[ChatSession]:
+    query = db.query(ChatSession)
+    if not include_archived:
+        query = query.filter(ChatSession.is_archived == False)
+    return query.order_by(desc(ChatSession.updated_at)).offset(skip).limit(limit).all()
+
+
+def create_chat_session(db: Session, session: ChatSessionCreate) -> ChatSession:
+    db_session = ChatSession(**session.dict())
+    db.add(db_session)
+    db.commit()
+    db.refresh(db_session)
+    return db_session
+
+
+def delete_chat_session(db: Session, session_id: int) -> bool:
+    db_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    if not db_session:
+        return False
+    
+    # Delete associated messages and knowledge files
+    db.query(ChatMessage).filter(ChatMessage.session_id == session_id).delete()
+    db.query(SessionKnowledge).filter(SessionKnowledge.session_id == session_id).delete()
+    
+    db.delete(db_session)
+    db.commit()
+    return True
+
+
+def archive_session(db: Session, session_id: int) -> Optional[ChatSession]:
+    """Archive a session (soft delete)"""
+    session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    if not session:
+        return None
+    
+    session.is_archived = True
+    session.title = f"[ARCHIVED] {session.title}"
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+def get_session_analytics(db: Session, session_id: int) -> Optional[dict]:
+    """Get detailed analytics for a specific session"""
+    session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    if not session:
+        return None
+    
+    # Message statistics
+    messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).all()
+    user_messages = [m for m in messages if m.role == 'user']
+    assistant_messages = [m for m in messages if m.role == 'assistant']
+    
+    # Token usage
+    total_tokens = 0
+    for msg in messages:
+        if msg.token_usage:
+            total_tokens += msg.token_usage.get('total_tokens', 0)
+    
+    return {
+        "session_id": session.id,
+        "title": session.title,
+        "message_count": len(messages),
+        "user_message_count": len(user_messages),
+        "assistant_message_count": len(assistant_messages),
+        "total_tokens_used": total_tokens,
+        "knowledge_files_count": len(session.knowledge_files),
+        "created_at": session.created_at,
+        "updated_at": session.updated_at
+    }
+
+
+def create_chat_message(db: Session, message: ChatMessageCreate) -> ChatMessage:
+    db_message = ChatMessage(**message.dict())
+    db.add(db_message)
+    db.commit()
+    db.refresh(db_message)
+    
+    # Update session message count and updated_at
+    session = db.query(ChatSession).filter(ChatSession.id == message.session_id).first()
+    if session:
+        session.message_count += 1
+        db.commit()
+    
+    return db_message
+
+
+def get_chat_messages(db: Session, session_id: int, skip: int = 0, limit: int = 1000) -> List[ChatMessage]:
+    return db.query(ChatMessage).filter(ChatMessage.session_id == session_id).offset(skip).limit(limit).all()
+
+
+def create_session_knowledge(db: Session, knowledge: SessionKnowledgeCreate) -> SessionKnowledge:
+    db_knowledge = SessionKnowledge(**knowledge.dict())
+    db.add(db_knowledge)
+    db.commit()
+    db.refresh(db_knowledge)
+    return db_knowledge
+
+
+def get_session_knowledge(db: Session, session_id: int) -> List[SessionKnowledge]:
+    return db.query(SessionKnowledge).filter(SessionKnowledge.session_id == session_id).all()
