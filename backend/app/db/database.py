@@ -10,20 +10,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.config import settings
 
-# Configure database URL based on environment
+# Configure database - PostgreSQL ONLY for production
 logger = logging.getLogger(__name__)
 
-if settings.DATABASE_URL.startswith("sqlite"):
-    # SQLite configuration
-    engine = create_engine(
-        settings.DATABASE_URL, 
-        connect_args={"check_same_thread": False}
-    )
-    logger.info("Using SQLite database")
-else:
-    # PostgreSQL configuration for production
-    engine = create_engine(settings.DATABASE_URL)
-    logger.info("Using PostgreSQL database")
+# Validate DATABASE_URL is PostgreSQL
+if not settings.DATABASE_URL.startswith("postgresql"):
+    raise ValueError("DATABASE_URL must be a PostgreSQL connection string for production")
+
+# PostgreSQL configuration
+engine = create_engine(settings.DATABASE_URL)
+logger.info("Using PostgreSQL database")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

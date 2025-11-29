@@ -121,7 +121,7 @@
                         <div class="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-green-600"></div>
                         <div>
                             <h2 class="text-sm font-semibold text-gray-900">System Status</h2>
-                            <p class="text-xs text-green-600">All systems operational</p>
+                            <p class="text-xs text-yellow-600" id="db-status-loading">Checking database...</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
@@ -705,17 +705,131 @@
         // Load dashboard data
         async function loadDashboardData() {
             try {
-                const [agents, sessions] = await Promise.all([
+                const [health, agents, sessions] = await Promise.all([
+                    makeAPIRequest('/api/v1/ui/health'),
                     makeAPIRequest('/api/v1/agents/'),
                     makeAPIRequest('/api/v1/sessions/')
                 ]);
 
-                // Update stats cards with real data
+                // Show PostgreSQL status in UI
+                console.log('Health check:', health);
                 console.log('Loaded agents:', agents);
                 console.log('Loaded sessions:', sessions);
                 
+                // Update system status header with actual database info
+                updateSystemStatus(health);
+                
+                // Update stats cards with real data
+                updateStatsCards(agents, sessions);
+                
             } catch (error) {
                 console.error('Failed to load dashboard data:', error);
+                // Show error in UI
+                document.querySelector('header').innerHTML = `
+                    <div class="glass-effect border-b border-red-200 px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-red-400 to-red-600"></div>
+                                <div>
+                                    <h2 class="text-sm font-semibold text-gray-900">System Status</h2>
+                                    <p class="text-xs text-red-600">API Connection Failed</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function updateSystemStatus(health) {
+            const header = document.querySelector('header .flex.items-center.justify-between');
+            if (!header) return;
+            
+            const dbStatus = health.details?.database?.status || 'unknown';
+            const dbType = health.details?.database?.type || 'Unknown';
+            const dbTables = health.details?.database?.tables || {};
+            
+            let statusColor = 'text-green-600';
+            let statusText = 'All systems operational';
+            let statusIcon = 'from-green-400 to-green-600';
+            let dbColor = 'text-green-600';
+            
+            if (health.status === 'unhealthy') {
+                statusColor = 'text-red-600';
+                statusText = 'System unhealthy';
+                statusIcon = 'from-red-400 to-red-600';
+                dbColor = 'text-red-600';
+            }
+            
+            // CRITICAL: Show PostgreSQL status visually
+            const isPostgres = dbType.toLowerCase().includes('postgresql');
+            const isSqlite = dbType.toLowerCase().includes('sqlite');
+            
+            let dbDisplay = '';
+            if (isPostgres) {
+                dbDisplay = `<span class="text-green-600 font-bold">✅ POSTGRES</span>`;
+            } else if (isSqlite) {
+                dbDisplay = `<span class="text-orange-600 font-bold">⚠️ SQLITE</span>`;
+            } else {
+                dbDisplay = `<span class="text-red-600 font-bold">❌ ${dbType}</span>`;
+            }
+            
+            header.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-r ${statusIcon}"></div>
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-900">System Status</h2>
+                        <p class="text-xs ${statusColor}">${statusText}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- BIG DATABASE STATUS INDICATOR -->
+                    <div class="text-xs font-semibold p-2 rounded ${isPostgres ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        DATABASE: ${dbDisplay}
+                    </div>
+                    ${dbTables.agents !== undefined ? `
+                        <div class="text-xs text-gray-600">
+                            <span class="font-semibold">Data:</span> 
+                            A:${dbTables.agents} S:${dbTables.sessions} M:${dbTables.messages}
+                        </div>
+                    ` : ''}
+                    <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-bell text-gray-600"></i>
+                    </button>
+                    <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-cog text-gray-600"></i>
+                    </button>
+                </div>
+            `;
+            
+            // ALSO SHOW IN CONSOLE FOR DEBUGGING
+            console.log('🔍 DATABASE STATUS:', {
+                type: dbType,
+                status: dbStatus,
+                isPostgres: isPostgres,
+                isSqlite: isSqlite,
+                tables: dbTables
+            });
+        }
+
+        function updateStatsCards(agents, sessions) {
+            // Update agents count
+            const agentsCount = document.querySelector('#agents').parentElement.querySelector('h3');
+            if (agentsCount && Array.isArray(agents)) {
+                agentsCount.textContent = agents.length;
+            }
+            
+            // Update sessions count  
+            const sessionsCount = document.querySelector('#sessions').parentElement.querySelector('h3');
+            if (sessionsCount && Array.isArray(sessions)) {
+                sessionsCount.textContent = sessions.length;
+            }
+            
+            // Update messages count (sum of all session message counts)
+            if (Array.isArray(sessions)) {
+                const totalMessages = sessions.reduce((sum, session) => sum + (session.message_count || 0), 0);
+                const messagesElement = document.querySelectorAll('h3')[1]; // Second stat card
+                if (messagesElement) messagesElement.textContent = totalMessages.toLocaleString();
             }
         }
 

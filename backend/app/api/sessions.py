@@ -135,11 +135,13 @@ def get_sessions_analytics(db: Session = Depends(get_db)):
         func.count(ChatSession.id).label('count')
     ).filter(ChatSession.is_archived == False).group_by(ChatSession.agent_id).all()
     
-    # Recent activity (sessions in last 7 days)
-    recent_sessions = db.query(func.count(ChatSession.id)).filter(
-        ChatSession.created_at >= func.datetime('now', '-7 days'),
-        ChatSession.is_archived == False
-    ).scalar() or 0
+    # Recent activity (sessions in last 7 days) - PostgreSQL compatible
+    from sqlalchemy import text
+    recent_sessions = db.execute(text("""
+        SELECT COUNT(*) FROM chat_sessions 
+        WHERE created_at >= NOW() - INTERVAL '7 days' 
+        AND is_archived = false
+    """)).scalar() or 0
     
     return SessionAnalyticsResponse(
         total_sessions=total_sessions,
@@ -180,7 +182,7 @@ def get_activity_timeline(
             func.count(ChatSession.id).label('sessions'),
             func.sum(ChatSession.message_count).label('messages')
         )
-        .filter(ChatSession.created_at >= func.datetime('now', f'-{days} days'))
+        .filter(ChatSession.created_at >= text(f"NOW() - INTERVAL '{days} days'"))
         .filter(ChatSession.is_archived == False)
         .group_by(func.date(ChatSession.created_at))
         .order_by(func.date(ChatSession.created_at))

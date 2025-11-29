@@ -103,7 +103,7 @@ class ChatResponse(BaseModel):
     message: str
     reasoning_content: Optional[str] = None
     model: str
-    token_usage: Dict[str, Any]
+    token_usage: Optional[Dict[str, Any]] = None  # CRITICAL: Made optional to prevent serialization errors
 
 
 class HealthResponse(BaseModel):

@@ -5,20 +5,15 @@ import os
 
 class Settings(BaseSettings):
     ZAI_API_KEY: str
-    DATABASE_URL: str = "sqlite:///./chatbot.db"  # Default to SQLite
+    DATABASE_URL: str  # PRODUCTION: MUST be PostgreSQL
     CORS_ORIGINS: list[str] = ["*"]
     
     # Production settings
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "production"  # Force production on Railway
     LOG_LEVEL: str = "INFO"
     
     class Config:
         env_file = ".env"
         extra = "ignore"
-
-
-# Force SQLite for local development unless in production
-if os.getenv("ENVIRONMENT") != "production":
-    os.environ["DATABASE_URL"] = "sqlite:///./chatbot.db"
 
 settings = Settings()
