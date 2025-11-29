@@ -12,6 +12,7 @@ sys.path.insert(0, backend_path)
 app_path = os.path.join(backend_path, 'app')
 sys.path.insert(0, app_path)
 
+# Import the FastAPI app from backend
 from main import app
 
 # Configure CORS for API
@@ -26,10 +27,15 @@ app.add_middleware(
 # Serve static files from frontend directory
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-# Serve index.html at root
-@app.get("/")
-async def read_index():
-    return FileResponse('frontend/index.html')
+# Serve index.html at root - THIS MUST COME AFTER API ROUTES
+# Get all existing routes first
+existing_routes = [route.path for route in app.routes]
+
+# Add root route only if not already present
+if "/" not in existing_routes:
+    @app.get("/", include_in_schema=False)
+    async def read_index():
+        return FileResponse('frontend/index.html')
 
 if __name__ == "__main__":
     import uvicorn
