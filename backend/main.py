@@ -31,8 +31,8 @@ app.include_router(api_router, prefix="/api/v1")
 def root():
     from fastapi.responses import FileResponse
     import os
-    # Serve frontend/index.html from parent directory
-    frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'index.html')
+    # Serve frontend/index.html from parent directory (correct path)
+    frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'index.html')
     return FileResponse(frontend_path)
 
 
