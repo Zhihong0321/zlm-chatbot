@@ -35,6 +35,8 @@ def check_status():
                     print(f"    - {table}: {count} rows")
             if 'error' in db:
                 print(f"  ERROR: {db.get('error')}")
+            if 'connection_error' in db:
+                print(f"  CONNECTION ERROR: {db.get('connection_error')}")
 
             # Z.ai API
             zai = details.get('zai_api', {})
@@ -59,8 +61,8 @@ def check_status():
 if __name__ == "__main__":
     success = check_status()
     if success:
-        print("\n✅ Production seems HEALTHY")
+        print("\n[OK] Production seems HEALTHY")
         sys.exit(0)
     else:
-        print("\n❌ Production seems UNHEALTHY")
+        print("\n[FAIL] Production seems UNHEALTHY")
         sys.exit(1)

@@ -23,7 +23,7 @@ class Agent(Base):
     system_prompt = Column(Text, nullable=False)
     model = Column(String(50), nullable=False, default="glm-4.5")
     temperature = Column(Float, default=0.7)
-    is_active = Column(Boolean, default=True)  # CRITICAL: Missing field added
+    # is_active = Column(Boolean, default=True)  # Removed to match Prod DB
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
     updated_at = Column(DateTime(timezone=True), onupdate=func.current_timestamp())
     
