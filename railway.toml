@@ -1,26 +1,21 @@
-{
-  "services": {
-    "api": {
-      "source": "./backend",
-      "runtime": "python",
-      "buildCommand": "pip install -r requirements.txt",
-      "startCommand": "python start_production.py",
-      "healthcheckPath": "/api/v1/ui/health",
-      "healthcheckTimeout": 300,
-      "restartPolicyType": "ON_FAILURE",
-      "restartPolicyMaxRetries": 10,
-      "environment": {
-        "ENVIRONMENT": "production",
-        "LOG_LEVEL": "INFO"
-      }
-    },
-    "postgres": {
-      "runtime": "postgresql",
-      "environment": {
-        "POSTGRES_USER": "railway",
-        "POSTGRES_PASSWORD": "railway",
-        "POSTGRES_DB": "chatbot"
-      }
-    }
-  }
-}
+[[services]]
+source = "./backend"
+runtime = "python"
+buildCommand = "pip install -r requirements.txt"
+startCommand = "python start_production.py"
+healthcheckPath = "/api/v1/ui/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[services.environment]
+ENVIRONMENT = "production"
+LOG_LEVEL = "INFO"
+
+[[services]]
+runtime = "postgresql"
+
+[services.environment]
+POSTGRES_USER = "railway"
+POSTGRES_PASSWORD = "railway"
+POSTGRES_DB = "chatbot"
