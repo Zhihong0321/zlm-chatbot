@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.schemas.schemas import ChatMessageCreate, ChatMessage, ChatResponse, ChatRequest
+from app.schemas.schemas import ChatMessageCreate, ChatMessage, ChatResponse, ChatRequest, MessageRequest
 from app.crud.crud import create_chat_message, get_chat_session, get_session_knowledge
 from app.core.zai_client import chat_with_zai
 from typing import Dict, Any
@@ -13,13 +13,15 @@ router = APIRouter()
 @router.post("/{session_id}/messages", response_model=ChatMessage)
 def send_message(
     session_id: int, 
-    message: str = Form(...),
+    request: MessageRequest,
     db: Session = Depends(get_db)
 ):
     # Verify session exists
     db_session = get_chat_session(db, session_id=session_id)
     if db_session is None:
         raise HTTPException(status_code=404, detail="Session not found")
+    
+    message = request.message
     
     # Create user message
     user_message = ChatMessageCreate(

@@ -99,6 +99,10 @@ class ChatRequest(BaseModel):
     agent_id: Optional[int] = None
 
 
+class MessageRequest(BaseModel):
+    message: str
+
+
 class ChatResponse(BaseModel):
     message: str
     reasoning_content: Optional[str] = None

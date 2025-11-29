@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.db.database import get_db, check_db_connection
-from app.schemas.schemas import HealthResponse
+from app.db.database import get_db, engine
 from datetime import datetime
 import logging
 
@@ -10,12 +9,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
 @router.get("/health")
 def health_check():
-    """Health check that works even with database issues"""
-    from backend.simple_health import simple_health
-    return simple_health()
     """Health check endpoint for Railway monitoring with PostgreSQL status"""
     
     status = "healthy"
@@ -25,33 +20,30 @@ def health_check():
     try:
         with engine.connect() as conn:
             # Get database type and version
-            from app.core.config import settings
-            db_type = "PostgreSQL"  # PRODUCTION: Always PostgreSQL
+            db_type = "PostgreSQL"
             
             # Get actual database version
-            if db_type == "PostgreSQL":
-                result = conn.execute(text("SELECT version()"))
-                db_version = result.fetchone()[0]
-                # Get table counts
-                agents_count = conn.execute(text("SELECT COUNT(*) FROM agents")).scalar()
-                sessions_count = conn.execute(text("SELECT COUNT(*) FROM chat_sessions")).scalar()
-                messages_count = conn.execute(text("SELECT COUNT(*) FROM chat_messages")).scalar()
-                
-                details["database"] = {
-                    "type": db_type,
-                    "version": db_version.split(",")[0],
-                    "status": "connected",
-                    "tables": {
-                        "agents": agents_count,
-                        "sessions": sessions_count,
-                        "messages": messages_count
-                    }
-                }
-            else:
-                details["database"] = {
-                    "type": db_type,
-                    "status": "connected"
-                }
+            result = conn.execute(text("SELECT version()"))
+            db_version = result.fetchone()[0]
+            
+            # Check table existence before counting
+            inspector_query = text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+            tables = [row[0] for row in conn.execute(inspector_query).fetchall()]
+            
+            table_stats = {}
+            if 'agents' in tables:
+                table_stats['agents'] = conn.execute(text("SELECT COUNT(*) FROM agents")).scalar()
+            if 'chat_sessions' in tables:
+                table_stats['sessions'] = conn.execute(text("SELECT COUNT(*) FROM chat_sessions")).scalar()
+            if 'chat_messages' in tables:
+                table_stats['messages'] = conn.execute(text("SELECT COUNT(*) FROM chat_messages")).scalar()
+
+            details["database"] = {
+                "type": db_type,
+                "version": db_version.split(",")[0],
+                "status": "connected",
+                "tables": table_stats
+            }
                 
     except Exception as e:
         status = "unhealthy"
@@ -60,7 +52,7 @@ def health_check():
             "error": str(e)
         }
     
-    # Check ZAI API
+    # Check ZAI API Config
     from app.core.config import settings
     if settings.ZAI_API_KEY:
         details["zai_api"] = {
@@ -73,11 +65,8 @@ def health_check():
             "status": "missing"
         }
     
-    # Overall status
-    overall_status = "healthy" if status == "healthy" else "unhealthy"
-    
     return {
-        "status": overall_status,
+        "status": status,
         "timestamp": datetime.utcnow().isoformat(),
         "details": details
     }

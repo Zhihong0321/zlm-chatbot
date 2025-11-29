@@ -24,18 +24,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static files from frontend directory
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+# Frontend build directory
+dist_dir = os.path.join(os.path.dirname(__file__), 'frontend', 'dist')
 
-# Serve index.html at root - THIS MUST COME AFTER API ROUTES
-# Get all existing routes first
-existing_routes = [route.path for route in app.routes]
+# Mount assets
+assets_path = os.path.join(dist_dir, 'assets')
+if os.path.exists(assets_path):
+    app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
-# Add root route only if not already present
-if "/" not in existing_routes:
-    @app.get("/", include_in_schema=False)
-    async def read_index():
-        return FileResponse('frontend/index.html')
+# Serve index.html for root and any other path (SPA support)
+@app.get("/{full_path:path}", include_in_schema=False)
+async def read_index(full_path: str):
+    # If the path is an API path, let it fall through (but FastAPI matches strictly first usually)
+    # Actually, since API routes are already included in 'app', they take precedence if they match.
+    # However, this catch-all might shadow 404s for API.
+    # Better to only serve index.html if it's NOT an API call.
+    
+    if full_path.startswith("api/"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    if os.path.exists(os.path.join(dist_dir, "index.html")):
+        return FileResponse(os.path.join(dist_dir, "index.html"))
+    
+    return {"message": "Frontend not built. Please run 'npm run build' in frontend directory."}
+
 
 if __name__ == "__main__":
     import uvicorn
