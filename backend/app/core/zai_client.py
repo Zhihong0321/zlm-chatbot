@@ -11,7 +11,8 @@ from app.core.config import settings
 def get_zai_client():
     return OpenAI(
         api_key=settings.ZAI_API_KEY,
-        base_url="https://api.z.ai/api/coding/paas/v4"
+        base_url="https://api.z.ai/api/coding/paas/v4",
+        # http_client=None # Explicitly default to avoid any proxy injection
     )
 
 
