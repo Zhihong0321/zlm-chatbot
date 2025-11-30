@@ -27,6 +27,28 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 
 
+# Mount static files properly
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Determine paths
+# Docker: /app/frontend/dist
+# Local: ../frontend/dist (if built) or ../frontend (source)
+docker_dist_path = "/app/frontend/dist"
+local_dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'frontend', 'dist')
+
+frontend_dist = None
+if os.path.exists(docker_dist_path):
+    frontend_dist = docker_dist_path
+elif os.path.exists(local_dist_path):
+    frontend_dist = local_dist_path
+
+if frontend_dist:
+    # Mount assets folder if it exists
+    assets_path = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+
 @app.get("/")
 def root():
     from fastapi.responses import FileResponse
