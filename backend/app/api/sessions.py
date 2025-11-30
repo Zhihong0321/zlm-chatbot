@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, or_, and_
 from typing import List, Optional, Dict, Any
 from app.db.database import get_db
+from app.models.models import ChatSession, ChatMessage
 from app.schemas.schemas import (
-    ChatSession, ChatSessionCreate, ChatMessage, SessionKnowledge,
+    ChatSession as ChatSessionSchema, ChatSessionCreate, ChatMessage as ChatMessageSchema, SessionKnowledge,
     SessionAnalyticsResponse, ActivityTimelineItem, BulkDeleteRequest, BulkDeleteResponse
 )
 from app.crud.crud import (
@@ -16,12 +17,12 @@ from app.crud.crud import (
 router = APIRouter()
 
 
-@router.post("/", response_model=ChatSession)
+@router.post("/", response_model=ChatSessionSchema)
 def create_session_endpoint(session: ChatSessionCreate, db: Session = Depends(get_db)):
     return create_chat_session(db=db, session=session)
 
 
-@router.get("/", response_model=List[ChatSession])
+@router.get("/", response_model=List[ChatSessionSchema])
 def read_sessions(
     skip: int = 0, 
     limit: int = 100, 
@@ -35,7 +36,7 @@ def read_sessions(
     return sessions
 
 
-@router.get("/{session_id}", response_model=ChatSession)
+@router.get("/{session_id}", response_model=ChatSessionSchema)
 def read_session(session_id: int, db: Session = Depends(get_db)):
     db_session = get_chat_session(db, session_id=session_id)
     if db_session is None:
@@ -50,7 +51,7 @@ def delete_session_endpoint(session_id: int, db: Session = Depends(get_db)):
     return {"message": "Session deleted successfully"}
 
 
-@router.get("/{session_id}/history", response_model=List[ChatMessage])
+@router.get("/{session_id}/history", response_model=List[ChatMessageSchema])
 def get_session_history(session_id: int, db: Session = Depends(get_db)):
     # Verify session exists
     db_session = get_chat_session(db, session_id=session_id)
@@ -71,7 +72,7 @@ def get_session_knowledge_endpoint(session_id: int, db: Session = Depends(get_db
     return get_session_knowledge(db, session_id=session_id)
 
 
-@router.get("/search", response_model=List[ChatSession])
+@router.get("/search", response_model=List[ChatSessionSchema])
 def search_sessions(
     q: str = Query(..., description="Search query"),
     agent_id: Optional[int] = Query(None),

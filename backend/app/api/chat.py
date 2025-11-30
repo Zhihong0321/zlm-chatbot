@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.schemas.schemas import ChatMessageCreate, ChatMessage, ChatResponse, ChatRequest, MessageRequest
+from app.models.models import ChatMessage
+from app.schemas.schemas import ChatMessageCreate, ChatMessage as ChatMessageSchema, ChatResponse, ChatRequest, MessageRequest
 from app.crud.crud import create_chat_message, get_chat_session, get_session_knowledge
 from app.core.zai_client import chat_with_zai
 from typing import Dict, Any
@@ -10,7 +11,7 @@ import json
 router = APIRouter()
 
 
-@router.post("/{session_id}/messages", response_model=ChatMessage)
+@router.post("/{session_id}/messages", response_model=ChatMessageSchema)
 def send_message(
     session_id: int, 
     request: MessageRequest,

@@ -2,18 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
-from app.schemas.schemas import Agent, AgentCreate, AgentUpdate
+from app.models.models import Agent
+from app.schemas.schemas import Agent as AgentSchema, AgentCreate, AgentUpdate
 from app.crud.crud import create_agent, get_agents, get_agent, update_agent, delete_agent
 
 router = APIRouter()
 
 
-@router.post("/", response_model=Agent)
+@router.post("/", response_model=AgentSchema)
 def create_agent_endpoint(agent: AgentCreate, db: Session = Depends(get_db)):
     return create_agent(db=db, agent=agent)
 
 
-@router.get("/", response_model=List[Agent])
+@router.get("/", response_model=List[AgentSchema])
 def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     try:
         agents = get_agents(db, skip=skip, limit=limit)
@@ -25,7 +26,7 @@ def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
 
 
-@router.get("/{agent_id}", response_model=Agent)
+@router.get("/{agent_id}", response_model=AgentSchema)
 def read_agent(agent_id: int, db: Session = Depends(get_db)):
     db_agent = get_agent(db, agent_id=agent_id)
     if db_agent is None:
@@ -33,7 +34,7 @@ def read_agent(agent_id: int, db: Session = Depends(get_db)):
     return db_agent
 
 
-@router.put("/{agent_id}", response_model=Agent)
+@router.put("/{agent_id}", response_model=AgentSchema)
 def update_agent_endpoint(agent_id: int, agent: AgentUpdate, db: Session = Depends(get_db)):
     db_agent = update_agent(db, agent_id=agent_id, agent=agent)
     if db_agent is None:
