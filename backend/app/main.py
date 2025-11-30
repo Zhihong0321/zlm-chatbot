@@ -31,9 +31,31 @@ app.include_router(api_router, prefix="/api/v1")
 def root():
     from fastapi.responses import FileResponse
     import os
-    # Serve frontend/index.html from parent directory (correct path)
-    frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'index.html')
-    return FileResponse(frontend_path)
+    
+    # PATH DEBUGGING
+    # Docker path: /app/frontend/dist/index.html (based on Dockerfile)
+    # Local path: ../frontend/index.html
+    
+    # Check possible paths
+    possible_paths = [
+        # 1. Docker deployment path (relative to /app/backend/app/main.py -> /app/frontend/dist/index.html)
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'frontend', 'dist', 'index.html'),
+        # 2. Docker alternative (absolute)
+        "/app/frontend/dist/index.html",
+        # 3. Local development path
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'index.html')
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return FileResponse(path)
+            
+    # Fallback: Return simple HTML if not found
+    return {
+        "message": "Frontend not found", 
+        "checked_paths": possible_paths, 
+        "cwd": os.getcwd()
+    }
 
 
 if __name__ == "__main__":
