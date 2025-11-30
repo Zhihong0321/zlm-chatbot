@@ -1,7 +1,15 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd frontend && npm install && npm run build && cd .. && pip install -r backend/requirements.txt"
+    "buildCommand": "cd frontend && npm install && npm run build && cd .. && pip install -r backend/requirements.txt",
+    "nixpacksPlan": {
+      "providers": ["python", "node"],
+      "phases": {
+        "setup": {
+          "nixPkgs": ["python3", "nodejs", "npm"]
+        }
+      }
+    }
   },
   "deploy": {
     "startCommand": "cd backend && python zero_fallback.py && cd .. && python app.py",
