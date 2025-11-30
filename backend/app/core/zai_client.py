@@ -1,5 +1,6 @@
 import os
 import sys
+import httpx
 from openai import OpenAI
 
 # Add the parent directory to Python path
@@ -10,9 +11,14 @@ from app.core.config import settings
 # Initialize Z.ai client
 def get_zai_client():
     try:
+        # Create a custom HTTP client to handle connection details explicitly
+        # This avoids OpenAI client trying to auto-configure proxies in a way that might fail
+        http_client = httpx.Client()
+        
         return OpenAI(
             api_key=settings.ZAI_API_KEY,
-            base_url="https://api.z.ai/api/coding/paas/v4"
+            base_url="https://api.z.ai/api/coding/paas/v4",
+            http_client=http_client
         )
     except TypeError as e:
         import openai
