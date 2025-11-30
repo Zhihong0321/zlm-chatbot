@@ -26,13 +26,13 @@ export const api = {
   health: () => apiClient.get('/api/v1/ui/health'),
   
   // Agents
-  getAgents: () => apiClient.get('/api/v1/agents'),
-  createAgent: (data: any) => apiClient.post('/api/v1/agents', data),
+  getAgents: () => apiClient.get('/api/v1/agents/'),
+  createAgent: (data: any) => apiClient.post('/api/v1/agents/', data),
   
   // Sessions
-  getSessions: () => apiClient.get('/api/v1/sessions'),
+  getSessions: () => apiClient.get('/api/v1/sessions/'),
   getSession: (id: string) => apiClient.get(`/api/v1/sessions/${id}`),
-  createSession: (data: any) => apiClient.post('/api/v1/sessions', data),
+  createSession: (data: any) => apiClient.post('/api/v1/sessions/', data),
   updateSession: (id: string, data: any) => apiClient.put(`/api/v1/sessions/${id}`, data),
   deleteSession: (id: string) => apiClient.delete(`/api/v1/sessions/${id}`),
   getSessionHistory: (id: string) => apiClient.get(`/api/v1/sessions/${id}/history`),
