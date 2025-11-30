@@ -32,5 +32,4 @@ ENV PYTHONPATH=/app
 ENV PORT=8000
 
 # Start command
-# NOTE: We are including the database reset script here for this specific deployment context
-CMD cd backend && python zero_fallback.py && cd .. && python app.py
+CMD cd backend && cd .. && python app.py
