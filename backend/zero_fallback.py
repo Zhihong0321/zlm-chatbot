@@ -18,6 +18,10 @@ def emergency_zero_fallback():
         logger.error("DATABASE_URL not found")
         sys.exit(1)
 
+    # Clean DB URL for psycopg2/SQLAlchemy
+    if "?" in database_url and "schema=" in database_url:
+        database_url = database_url.split("?")[0]
+
     logger.warning(f"CONNECTING TO: {database_url.split('@')[1] if '@' in database_url else 'DB'}")
     logger.warning("!!! THIS WILL DELETE ALL DATA !!!")
     

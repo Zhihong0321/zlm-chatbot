@@ -26,6 +26,18 @@ app.add_middleware(
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
 
+# Global Exception Handler
+from fastapi import Request
+from fastapi.responses import JSONResponse
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    error_details = traceback.format_exc()
+    print(f"GLOBAL ERROR: {error_details}")  # Log to stdout for Railway logs
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal Server Error", "detail": str(exc), "trace": error_details}
+    )
 
 @app.get("/")
 def root():

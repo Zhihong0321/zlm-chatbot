@@ -8,6 +8,9 @@ from app.crud.crud import create_agent, get_agents, get_agent, update_agent, del
 
 router = APIRouter()
 
+@router.get("/test")
+def test_agents_endpoint():
+    return {"message": "Agents router is working"}
 
 @router.post("/", response_model=AgentSchema)
 def create_agent_endpoint(agent: AgentCreate, db: Session = Depends(get_db)):
