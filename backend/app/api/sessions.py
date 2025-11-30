@@ -36,42 +36,6 @@ def read_sessions(
     return sessions
 
 
-@router.get("/{session_id}", response_model=ChatSessionSchema)
-def read_session(session_id: int, db: Session = Depends(get_db)):
-    db_session = get_chat_session(db, session_id=session_id)
-    if db_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return db_session
-
-
-@router.delete("/{session_id}")
-def delete_session_endpoint(session_id: int, db: Session = Depends(get_db)):
-    if not delete_chat_session(db, session_id=session_id):
-        raise HTTPException(status_code=404, detail="Session not found")
-    return {"message": "Session deleted successfully"}
-
-
-@router.get("/{session_id}/history", response_model=List[ChatMessageSchema])
-def get_session_history(session_id: int, db: Session = Depends(get_db)):
-    # Verify session exists
-    db_session = get_chat_session(db, session_id=session_id)
-    if db_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    messages = get_chat_messages(db, session_id=session_id)
-    return messages
-
-
-@router.get("/{session_id}/knowledge", response_model=List[SessionKnowledge])
-def get_session_knowledge_endpoint(session_id: int, db: Session = Depends(get_db)):
-    # Verify session exists
-    db_session = get_chat_session(db, session_id=session_id)
-    if db_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    return get_session_knowledge(db, session_id=session_id)
-
-
 @router.get("/search", response_model=List[ChatSessionSchema])
 def search_sessions(
     q: str = Query(..., description="Search query"),
@@ -153,24 +117,6 @@ def get_sessions_analytics(db: Session = Depends(get_db)):
     )
 
 
-@router.post("/bulk-delete", response_model=BulkDeleteResponse)
-def bulk_delete_sessions(request: BulkDeleteRequest, db: Session = Depends(get_db)):
-    """Delete multiple sessions at once"""
-    deleted_count = db.query(ChatSession).filter(ChatSession.id.in_(request.session_ids)).delete(synchronize_session=False)
-    db.commit()
-    return BulkDeleteResponse(message=f"Successfully deleted {deleted_count} sessions")
-
-
-@router.post("/{session_id}/archive")
-def archive_session_endpoint(session_id: int, db: Session = Depends(get_db)):
-    """Archive a session (soft delete)"""
-    session = archive_session(db, session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    return {"message": "Session archived successfully"}
-
-
 @router.get("/activity/timeline", response_model=List[ActivityTimelineItem])
 def get_activity_timeline(
     days: int = Query(30, description="Number of days to look back"),
@@ -198,6 +144,63 @@ def get_activity_timeline(
         )
         for date, sessions, messages in timeline
     ]
+
+
+@router.get("/{session_id}", response_model=ChatSessionSchema)
+def read_session(session_id: int, db: Session = Depends(get_db)):
+    db_session = get_chat_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return db_session
+
+
+@router.delete("/{session_id}")
+def delete_session_endpoint(session_id: int, db: Session = Depends(get_db)):
+    if not delete_chat_session(db, session_id=session_id):
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"message": "Session deleted successfully"}
+
+
+@router.get("/{session_id}/history", response_model=List[ChatMessageSchema])
+def get_session_history(session_id: int, db: Session = Depends(get_db)):
+    # Verify session exists
+    db_session = get_chat_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    messages = get_chat_messages(db, session_id=session_id)
+    return messages
+
+
+@router.get("/{session_id}/knowledge", response_model=List[SessionKnowledge])
+def get_session_knowledge_endpoint(session_id: int, db: Session = Depends(get_db)):
+    # Verify session exists
+    db_session = get_chat_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    return get_session_knowledge(db, session_id=session_id)
+
+
+# Moved /search, /analytics/summary, /activity/timeline to top to avoid path conflict
+
+
+@router.post("/bulk-delete", response_model=BulkDeleteResponse)
+def bulk_delete_sessions(request: BulkDeleteRequest, db: Session = Depends(get_db)):
+    """Delete multiple sessions at once"""
+    deleted_count = db.query(ChatSession).filter(ChatSession.id.in_(request.session_ids)).delete(synchronize_session=False)
+    db.commit()
+    return BulkDeleteResponse(message=f"Successfully deleted {deleted_count} sessions")
+
+
+@router.post("/{session_id}/archive")
+def archive_session_endpoint(session_id: int, db: Session = Depends(get_db)):
+    """Archive a session (soft delete)"""
+    session = archive_session(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    return {"message": "Session archived successfully"}
 
 
 @router.get("/{session_id}/analytics")
