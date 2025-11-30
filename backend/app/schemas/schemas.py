@@ -25,7 +25,7 @@ class AgentUpdate(BaseModel):
 
 class Agent(AgentBase):
     id: int
-    # is_active: bool = True # Removed to match Prod DB
+    is_active: bool = True
     created_at: datetime
     updated_at: Optional[datetime]
     

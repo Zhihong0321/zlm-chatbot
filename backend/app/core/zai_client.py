@@ -9,11 +9,15 @@ from app.core.config import settings
 
 # Initialize Z.ai client
 def get_zai_client():
-    return OpenAI(
-        api_key=settings.ZAI_API_KEY,
-        base_url="https://api.z.ai/api/coding/paas/v4",
-        # http_client=None # Explicitly default to avoid any proxy injection
-    )
+    try:
+        return OpenAI(
+            api_key=settings.ZAI_API_KEY,
+            base_url="https://api.z.ai/api/coding/paas/v4"
+        )
+    except TypeError as e:
+        import openai
+        # This helps debug if the server is running an old version or if args are wrong
+        raise Exception(f"OpenAI Init Error (v{openai.__version__}): {str(e)}")
 
 
 def chat_with_zai(message: str, system_prompt: str = None, model: str = "glm-4.5", temperature: float = 0.7):
