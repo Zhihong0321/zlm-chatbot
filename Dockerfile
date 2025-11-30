@@ -6,7 +6,8 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
-RUN npm run build
+# Explicitly unset VITE_API_BASE_URL during build to force relative paths
+RUN VITE_API_BASE_URL="" npm run build
 
 # Stage 2: Build Backend
 FROM python:3.11-slim as backend-builder
