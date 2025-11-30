@@ -49,8 +49,13 @@ if frontend_dist:
     if os.path.exists(assets_path):
         app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
-@app.get("/")
-def root():
+    # Mount the entire dist folder as root static files for favicon, etc.
+    # But exclude index.html to let the root endpoint handle it
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+
+@app.get("/api-status") # Renamed root to avoid conflict with mounted static files
+def status_check():
+    return {"status": "online"}
     from fastapi.responses import FileResponse
     import os
     
