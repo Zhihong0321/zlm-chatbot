@@ -49,40 +49,33 @@ if frontend_dist:
     if os.path.exists(assets_path):
         app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
-    # Mount the entire dist folder as root static files for favicon, etc.
-    # But exclude index.html to let the root endpoint handle it
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+# SPA Catch-All Route
+# This handles serving index.html for all non-API routes to support React Router
+from fastapi.responses import FileResponse
+from fastapi import HTTPException
 
-@app.get("/api-status") # Renamed root to avoid conflict with mounted static files
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    # 1. Skip API routes (redundant as they match first, but good for safety)
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API route not found")
+    
+    # 2. Try to serve specific static file if it exists (e.g. favicon.ico, robot.txt)
+    if frontend_dist:
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # 3. Fallback to index.html for SPA routing (React Router)
+        index_path = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+
+    return {"message": "Frontend not found", "path": full_path}
+
+@app.get("/api-status")
 def status_check():
     return {"status": "online"}
-    from fastapi.responses import FileResponse
-    import os
-    
-    # PATH DEBUGGING
-    # Docker path: /app/frontend/dist/index.html (based on Dockerfile)
-    # Local path: ../frontend/index.html
-    
-    # Check possible paths
-    possible_paths = [
-        # 1. Docker deployment path (relative to /app/backend/app/main.py -> /app/frontend/dist/index.html)
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'frontend', 'dist', 'index.html'),
-        # 2. Docker alternative (absolute)
-        "/app/frontend/dist/index.html",
-        # 3. Local development path
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'frontend', 'index.html')
-    ]
-    
-    for path in possible_paths:
-        if os.path.exists(path):
-            return FileResponse(path)
-            
-    # Fallback: Return simple HTML if not found
-    return {
-        "message": "Frontend not found", 
-        "checked_paths": possible_paths, 
-        "cwd": os.getcwd()
-    }
 
 
 if __name__ == "__main__":
