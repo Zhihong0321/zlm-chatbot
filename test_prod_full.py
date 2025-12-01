@@ -60,7 +60,11 @@ class ProdApiTester:
         log("Testing Agents CRUD...")
         try:
             # 1. List Agents
-            res = requests.get(f"{BASE_URL}/agents") # Removed trailing slash
+            res = requests.get(f"{BASE_URL}/agents/") # Added trailing slash
+            if res.status_code != 200:
+                # Retry without trailing slash
+                res = requests.get(f"{BASE_URL}/agents")
+            
             if res.status_code != 200:
                 log("Failed to list agents", "FAIL")
                 return self.record_result(False)
@@ -76,7 +80,7 @@ class ProdApiTester:
                 "model": "glm-4.5-flash",
                 "temperature": 0.7
             }
-            res = requests.post(f"{BASE_URL}/agents", json=new_agent_data) # Removed trailing slash
+            res = requests.post(f"{BASE_URL}/agents/", json=new_agent_data)
             if res.status_code != 200:
                 log(f"Failed to create agent: {res.text}", "FAIL")
                 return self.record_result(False)
@@ -117,7 +121,7 @@ class ProdApiTester:
                 "title": f"Test_Session_{generate_random_string()}",
                 "agent_id": self.test_agent['id']
             }
-            res = requests.post(f"{BASE_URL}/sessions", json=session_data) # Removed trailing slash
+            res = requests.post(f"{BASE_URL}/sessions/", json=session_data)
             if res.status_code != 200:
                 log(f"Failed to create session: {res.text}", "FAIL")
                 return self.record_result(False)
@@ -134,7 +138,7 @@ class ProdApiTester:
                 self.record_result(False)
             
             # 3. List Sessions (verify presence)
-            res = requests.get(f"{BASE_URL}/sessions") # Removed trailing slash
+            res = requests.get(f"{BASE_URL}/sessions/")
             sessions = res.json()
             found = any(s['id'] == self.test_session['id'] for s in sessions)
             if found:

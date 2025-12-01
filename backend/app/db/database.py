@@ -18,7 +18,13 @@ if not settings.DATABASE_URL.startswith("postgresql"):
     raise ValueError("DATABASE_URL must be a PostgreSQL connection string for production")
 
 # PostgreSQL configuration
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_size=5,
+    max_overflow=10
+)
 logger.info("Using PostgreSQL database")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
