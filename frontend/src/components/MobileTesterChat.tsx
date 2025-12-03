@@ -77,6 +77,15 @@ export default function MobileTesterChat() {
     if (!input.trim() || !sessionId || loading) return;
 
     const messageText = input.trim();
+    const tempUserMessage = {
+      id: 'temp-user-' + Date.now(),
+      role: 'user',
+      content: messageText,
+      created_at: new Date().toISOString()
+    };
+
+    // Add user message immediately to UI
+    setMessages(prev => [...prev, tempUserMessage]);
     setInput('');
     setLoading(true);
     setError('');
@@ -85,12 +94,16 @@ export default function MobileTesterChat() {
       // Send to backend and get response
       const res = await api.sendMessage(sessionId, { message: messageText });
       
-      // Reload messages (both user and AI will be in DB)
+      // Remove temp message and add real messages
+      setMessages(prev => [...prev.filter(m => m.id !== tempUserMessage.id), res.data]);
+      
+      // Ensure we have both user and AI messages by reloading
       await loadMessages();
     } catch (err) {
       console.error('Send failed:', err);
       setError('Failed to send message');
-      // Restore input on error
+      // Remove temp message on error
+      setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
       setInput(messageText);
     } finally {
       setLoading(false);
@@ -187,23 +200,23 @@ export default function MobileTesterChat() {
           </div>
         ))}
         
-        {loading && (
-            <div className="flex flex-col items-start mb-4">
-                 <div className="flex items-center gap-2 max-w-[85%] bg-blue-50 border border-blue-200 p-4 rounded-2xl rounded-bl-none shadow-sm">
-                    <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                    <div className="text-xs text-blue-600 font-medium">Agent is thinking...</div>
-                 </div>
-            </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
       <div className="shrink-0 p-3 bg-white border-t border-gray-200">
+        {loading && (
+            <div className="mb-2 text-center">
+                 <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-2 rounded-full shadow-sm">
+                    <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <div className="text-xs text-blue-600 font-medium">Agent is thinking...</div>
+                 </div>
+            </div>
+        )}
         <form
             onSubmit={handleSend}
             className="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-4 py-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-opacity-20 transition-all shadow-sm"
