@@ -58,6 +58,7 @@ def send_message(
             session_id=session_id,
             role="assistant",
             content=ai_response["content"],
+            reasoning_content=ai_response.get("reasoning_content"),
             model=ai_response["model"],
             token_usage=ai_response["token_usage"]
         )
