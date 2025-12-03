@@ -1,12 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { PaperAirplaneIcon, PlusIcon, ChatBubbleLeftRightIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, PlusIcon, ChatBubbleLeftRightIcon, ExclamationCircleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+
+// Cookie helper functions
+const setUserCookie = (agentId: string, sessionId: string) => {
+  const cookieName = `chat_session_${agentId}`;
+  document.cookie = `${cookieName}=${sessionId}; max-age=30*24*60*60; path=/`; // 30 days
+};
+
+const getUserCookie = (agentId: string): string | null => {
+  const cookieName = `chat_session_${agentId}`;
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === cookieName) return value;
+  }
+  return null;
+};
 
 export default function MobileTesterChat() {
-  const { agentId } = useParams();
+  const { agentId, sessionId } = useParams();
+  const navigate = useNavigate();
   
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,19 +46,33 @@ export default function MobileTesterChat() {
       });
   }, [agentId]);
 
-  // Create session when agent loads
+  // Check existing session or create new one
   useEffect(() => {
-    if (agent && !sessionId) {
+    if (!agent) return;
+    
+    const currentSessionId = sessionId || getUserCookie(agentId);
+    
+    if (currentSessionId) {
+      // Use existing session
+      if (currentSessionId !== sessionId) {
+        // Navigate to the session if we're not already there
+        navigate(`/tester/${agentId}/chat/${currentSessionId}`, { replace: true });
+      } else {
+        // Load messages for current session
+        loadMessages();
+      }
+    } else {
+      // Create new session for new users
       createNewSession();
     }
   }, [agent]);
 
-  // Load messages when sessionId changes
+  // Load messages when sessionId exists
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !agent) return;
     
     loadMessages();
-  }, [sessionId]);
+  }, [sessionId, agent]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -52,13 +82,19 @@ export default function MobileTesterChat() {
   const createNewSession = async () => {
     try {
       const res = await api.createSession({
-        title: `Tester Chat - ${new Date().toLocaleTimeString()}`,
+        title: 'New Chat',
         agent_id: agent.id
       });
-      setSessionId(res.data.id);
+      const newSessionId = res.data.id;
+      setUserCookie(agentId!, newSessionId);
+      navigate(`/tester/${agentId}/chat/${newSessionId}`);
     } catch (err) {
       setError('Failed to create session');
     }
+  };
+
+  const handleViewSessions = () => {
+    navigate(`/tester/${agentId}/sessions`);
   };
 
   const loadMessages = async () => {
@@ -142,12 +178,18 @@ export default function MobileTesterChat() {
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
         <div className="flex items-center gap-3 overflow-hidden">
+            <button
+              onClick={handleViewSessions}
+              className="p-2 rounded-full text-gray-600 hover:bg-gray-100"
+            >
+              <ArrowLeftIcon className="w-5 h-5" />
+            </button>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shrink-0">
                 {agent.name.charAt(0)}
             </div>
             <div className="min-w-0">
                 <h1 className="font-bold text-gray-900 truncate leading-tight">{agent.name}</h1>
-                <p className="text-xs text-gray-500 truncate">Tester View</p>
+                <p className="text-xs text-gray-500 truncate">Chat</p>
             </div>
         </div>
         <div className="flex items-center gap-2">

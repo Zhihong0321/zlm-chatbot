@@ -5,6 +5,7 @@ import ChatInterface from './components/ChatInterface';
 import AgentBuilder from './components/AgentBuilder';
 import ChatPlayground from './components/ChatPlayground';
 import MobileTesterChat from './components/MobileTesterChat';
+import MobileTesterChatSessions from './components/MobileTesterChatSessions';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AppProvider } from './context/AppContext';
@@ -47,7 +48,20 @@ const router = createBrowserRouter([
   },
   {
     path: '/tester/:agentId',
-    element: <MobileTesterChat />,
+    children: [
+      {
+        index: true,
+        element: <MobileTesterChatSessions />,
+      },
+      {
+        path: 'sessions',
+        element: <MobileTesterChatSessions />,
+      },
+      {
+        path: 'chat/:sessionId',
+        element: <MobileTesterChat />,
+      }
+    ],
   }
 ]);
 
