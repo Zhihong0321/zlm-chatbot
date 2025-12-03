@@ -27,7 +27,10 @@ export const api = {
   
   // Agents
   getAgents: () => apiClient.get('/api/v1/agents/'),
+  getAgent: (id: string) => apiClient.get(`/api/v1/agents/${id}`),
   createAgent: (data: any) => apiClient.post('/api/v1/agents/', data),
+  updateAgent: (id: string, data: any) => apiClient.put(`/api/v1/agents/${id}`, data),
+  deleteAgent: (id: string) => apiClient.delete(`/api/v1/agents/${id}`),
   
   // Sessions
   getSessions: () => apiClient.get('/api/v1/sessions/'),

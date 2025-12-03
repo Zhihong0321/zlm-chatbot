@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { useAgents, useCreateAgent } from '../hooks/useApi';
+import { useAgents, useCreateAgent, useUpdateAgent, useDeleteAgent } from '../hooks/useApi';
 
 export default function AgentBuilder() {
   const { data: agents, isLoading, error } = useAgents();
   const createAgentMutation = useCreateAgent();
+  const updateAgentMutation = useUpdateAgent();
+  const deleteAgentMutation = useDeleteAgent();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -13,22 +15,66 @@ export default function AgentBuilder() {
     temperature: 0.7,
   });
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      model: 'glm-4.6',
+      system_prompt: '',
+      temperature: 0.7,
+    });
+    setEditingId(null);
+    setIsFormVisible(false);
+  };
+
+  const handleCreateClick = () => {
+    setEditingId(null);
+    setFormData({
+      name: '',
+      description: '',
+      model: 'glm-4.6',
+      system_prompt: '',
+      temperature: 0.7,
+    });
+    setIsFormVisible(true);
+  };
+
+  const handleEditClick = (agent: any) => {
+    setEditingId(agent.id);
+    setFormData({
+      name: agent.name,
+      description: agent.description || '',
+      model: agent.model,
+      system_prompt: agent.system_prompt,
+      temperature: agent.temperature,
+    });
+    setIsFormVisible(true);
+  };
+
+  const handleDeleteClick = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this agent?')) {
+      try {
+        await deleteAgentMutation.mutateAsync(id);
+      } catch (error) {
+        console.error('Failed to delete agent:', error);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createAgentMutation.mutateAsync(formData);
-      setFormData({
-        name: '',
-        description: '',
-        model: 'glm-4.6',
-        system_prompt: '',
-        temperature: 0.7,
-      });
-      setIsCreating(false);
+      if (editingId) {
+        await updateAgentMutation.mutateAsync({ id: editingId, data: formData });
+      } else {
+        await createAgentMutation.mutateAsync(formData);
+      }
+      resetForm();
     } catch (error) {
-      console.error('Failed to create agent:', error);
+      console.error('Failed to save agent:', error);
     }
   };
 
@@ -54,10 +100,10 @@ export default function AgentBuilder() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Agent Builder</h1>
           <button
-            onClick={() => setIsCreating(!isCreating)}
-            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
+            onClick={() => isFormVisible ? resetForm() : handleCreateClick()}
+            className={`${isFormVisible ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700'} text-white font-medium py-2 px-4 rounded-md`}
           >
-            {isCreating ? 'Cancel' : 'Create Agent'}
+            {isFormVisible ? 'Cancel' : 'Create Agent'}
           </button>
         </div>
 
@@ -67,9 +113,11 @@ export default function AgentBuilder() {
           </div>
         )}
 
-        {isCreating && (
+        {isFormVisible && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Create New Agent</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              {editingId ? 'Edit Agent' : 'Create New Agent'}
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -155,17 +203,19 @@ export default function AgentBuilder() {
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setIsCreating(false)}
+                  onClick={resetForm}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={createAgentMutation.isPending}
+                  disabled={createAgentMutation.isPending || updateAgentMutation.isPending}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {createAgentMutation.isPending ? 'Creating...' : 'Create Agent'}
+                  {createAgentMutation.isPending || updateAgentMutation.isPending 
+                    ? 'Saving...' 
+                    : (editingId ? 'Update Agent' : 'Create Agent')}
                 </button>
               </div>
             </form>
@@ -176,13 +226,31 @@ export default function AgentBuilder() {
           {agents?.map((agent) => (
             <div
               key={agent.id}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow flex flex-col h-full"
             >
-              <h3 className="text-lg font-medium text-gray-900 mb-2">{agent.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">{agent.description}</p>
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Model: {agent.model}</span>
-                <span>Temp: {agent.temperature}</span>
+              <div className="flex-grow">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{agent.name}</h3>
+                <p className="text-sm text-gray-600 mb-4 line-clamp-3">{agent.description}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                  <span className="bg-gray-100 px-2 py-1 rounded">{agent.model}</span>
+                  <span className="bg-gray-100 px-2 py-1 rounded">Temp: {agent.temperature}</span>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-100 pt-3 mt-auto flex justify-end space-x-2">
+                <button
+                  onClick={() => handleEditClick(agent)}
+                  className="text-sm text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteClick(agent.id)}
+                  className="text-sm text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                  disabled={deleteAgentMutation.isPending}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}

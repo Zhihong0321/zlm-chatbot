@@ -66,6 +66,14 @@ export interface CreateAgentRequest {
   temperature?: number;
 }
 
+export interface UpdateAgentRequest {
+  name?: string;
+  description?: string;
+  model?: string;
+  system_prompt?: string;
+  temperature?: number;
+}
+
 export interface CreateSessionRequest {
   title?: string;
   agent_id?: string;
