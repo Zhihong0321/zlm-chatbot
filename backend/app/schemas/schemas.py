@@ -160,7 +160,7 @@ class AgentKnowledgeFileBase(BaseModel):
     file_type: Optional[str] = None
     purpose: str = "agent"
     status: str = "active"
-    metadata: Optional[Dict[str, Any]] = None
+    file_metadata: Optional[Dict[str, Any]] = None
 
 
 class AgentKnowledgeFileCreate(AgentKnowledgeFileBase):

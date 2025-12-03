@@ -125,7 +125,7 @@ async def upload_agent_file(
         file_type=file_extension,
         purpose=purpose,
         status="active",
-        metadata={"uploaded_by": "system", "source": "agent_upload"},
+        file_metadata={"uploaded_by": "system", "source": "agent_upload"},
         expires_at=datetime.fromisoformat(upload_result["expires_at"].replace('Z', '+00:00'))
     )
     

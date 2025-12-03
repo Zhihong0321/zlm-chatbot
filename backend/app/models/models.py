@@ -87,7 +87,7 @@ class AgentKnowledgeFile(Base):
     file_type = Column(String(10))  # txt, pdf, doc, etc.
     purpose = Column(String(20), default="agent")  # agent, assistant, etc.
     status = Column(String(20), default="active")  # active, deleted, expired
-    metadata = Column(JSON)  # Additional file metadata
+    file_metadata = Column(JSON)  # Additional file metadata
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
     updated_at = Column(DateTime(timezone=True), onupdate=func.current_timestamp())
     expires_at = Column(DateTime(timezone=True))  # When Z.ai file expires (180 days)
