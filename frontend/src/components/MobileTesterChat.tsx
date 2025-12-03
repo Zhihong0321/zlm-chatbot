@@ -125,9 +125,9 @@ export default function MobileTesterChat() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen bg-white max-h-screen">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
         <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shrink-0">
                 {agent.name.charAt(0)}
@@ -149,11 +149,11 @@ export default function MobileTesterChat() {
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0">
         {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
-                <ChatBubbleLeftRightIcon className="w-12 h-12" />
-                <p>Start chatting with {agent.name}</p>
+            <div className="flex flex-col items-center justify-center min-h-full text-gray-400 space-y-4 py-8">
+                <ChatBubbleLeftRightIcon className="w-16 h-16" />
+                <p className="text-lg">Start chatting with {agent.name}</p>
             </div>
         )}
         
@@ -188,9 +188,14 @@ export default function MobileTesterChat() {
         ))}
         
         {loading && (
-            <div className="flex flex-col items-start">
-                 <div className="flex items-center gap-2 max-w-[85%] bg-white p-4 rounded-2xl rounded-bl-none shadow-sm border border-gray-200">
-                    <div className="text-xs text-gray-400">Agent is thinking...</div>
+            <div className="flex flex-col items-start mb-4">
+                 <div className="flex items-center gap-2 max-w-[85%] bg-blue-50 border border-blue-200 p-4 rounded-2xl rounded-bl-none shadow-sm">
+                    <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <div className="text-xs text-blue-600 font-medium">Agent is thinking...</div>
                  </div>
             </div>
         )}
@@ -198,25 +203,25 @@ export default function MobileTesterChat() {
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white border-t border-gray-200">
+      <div className="shrink-0 p-3 bg-white border-t border-gray-200">
         <form
             onSubmit={handleSend}
-            className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2"
+            className="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-4 py-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-opacity-20 transition-all shadow-sm"
         >
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-base h-9 placeholder-gray-400"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-base h-5 placeholder-gray-500 text-gray-900"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="p-2 rounded-full bg-blue-600 text-white disabled:opacity-50 hover:bg-blue-700 transition-all"
+            className="p-2 rounded-full bg-blue-600 text-white disabled:opacity-50 hover:bg-blue-700 transition-all flex-shrink-0"
           >
-            <PaperAirplaneIcon className="w-5 h-5" />
+            <PaperAirplaneIcon className="w-4 h-4" />
           </button>
         </form>
       </div>
