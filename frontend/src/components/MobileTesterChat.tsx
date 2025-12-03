@@ -42,11 +42,39 @@ export default function MobileTesterChat() {
   // Send Message Mutation
   const sendMessageMutation = useMutation({
     mutationFn: (data: any) => api.sendMessage(sessionId || '', data),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      // Cancel outgoing refetches so they don't overwrite optimistic update
+      await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
+
+      // Snapshot previous value
+      const previousMessages = queryClient.getQueryData(['messages', sessionId]);
+
+      // Optimistically update to new value
+      queryClient.setQueryData(['messages', sessionId], (old: any[] = []) => [
+        ...old,
+        {
+          id: 'temp-' + Date.now(),
+          role: 'user',
+          content: newData.message,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      
+      // Clear input immediately
       setInput('');
-      queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
       setIsAutoScrolling(true);
-    }
+
+      return { previousMessages };
+    },
+    onError: (err, newTodo, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['messages', sessionId], context?.previousMessages);
+      alert('Failed to send message. Please try again.');
+    },
+    onSettled: () => {
+      // Refetch after error or success to get real server data
+      queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+    },
   });
 
   // Initialize Session
@@ -61,7 +89,7 @@ export default function MobileTesterChat() {
     if (isAutoScrolling && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isAutoScrolling]);
+  }, [messages, isAutoScrolling, sendMessageMutation.isPending]); // Add isPending to scroll when typing indicator appears
 
   const startNewChat = () => {
     if (!agent) return;
@@ -166,8 +194,15 @@ export default function MobileTesterChat() {
         ))}
         
         {sendMessageMutation.isPending && (
-            <div className="flex flex-col items-start animate-pulse">
-                 <div className="bg-gray-200 h-8 w-16 rounded-2xl rounded-bl-none"></div>
+            <div className="flex flex-col items-start animate-pulse w-full">
+                 <div className="flex items-center gap-2 max-w-[85%] bg-white p-4 rounded-2xl rounded-bl-none shadow-sm border border-gray-100">
+                    <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <span className="text-xs text-gray-400 font-medium">Agent is thinking...</span>
+                 </div>
             </div>
         )}
         <div ref={messagesEndRef} />
