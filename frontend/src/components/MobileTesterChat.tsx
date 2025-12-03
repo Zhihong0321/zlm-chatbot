@@ -27,6 +27,8 @@ export default function MobileTesterChat() {
     mutationFn: (data: any) => api.createSession(data),
     onSuccess: (res) => {
       setSessionId(res.data.id);
+      // Clear any cached messages for new session
+      queryClient.removeQueries({ queryKey: ['messages', res.data.id] });
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
     }
   });
@@ -35,9 +37,13 @@ export default function MobileTesterChat() {
   const sendMessageMutation = useMutation({
     mutationFn: (data: any) => api.sendMessage(sessionId || '', data),
     onMutate: async (newData) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
+      
+      // Snapshot the previous value
       const previousMessages = queryClient.getQueryData(['messages', sessionId]);
       
+      // Optimistically update to the new value
       queryClient.setQueryData(['messages', sessionId], (old: any[] = []) => [
         ...old,
         {
@@ -53,41 +59,49 @@ export default function MobileTesterChat() {
       return { previousMessages };
     },
     onError: (err, newTodo, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(['messages', sessionId], context?.previousMessages);
       alert('Failed to send message. Please try again.');
     },
-    onSuccess: (data) => {
-        queryClient.setQueryData(['messages', sessionId], (old: any[] = []) => {
-            return [...old, data.data];
-        });
+    onSuccess: (response) => {
+      // Handle AI response - just invalidate to get fresh data
+      // Don't manually update as it can cause race conditions
     },
     onSettled: () => {
+      // Always refetch after error or success to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
     },
   });
 
-  // Fetch Messages (Moved after mutation)
+  // Fetch Messages - Simplified to avoid race conditions
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ['messages', sessionId],
-    queryFn: () => api.getSession(sessionId || '').then(res => res.data.messages || []),
-    enabled: !!sessionId && !sendMessageMutation.isPending, // Now accessing sendMessageMutation is valid
-    refetchInterval: 1000, 
-    placeholderData: (previousData) => previousData, 
+    queryFn: () => api.getSession(sessionId || '').then(res => {
+      // Extract messages from session response
+      const sessionData = res.data;
+      if (sessionData && sessionData.messages) {
+        return sessionData.messages;
+      }
+      return [];
+    }),
+    enabled: !!sessionId, // Remove isPending check to allow continuous updates
+    // Remove refetchInterval to prevent race conditions
+    // Remove placeholderData to avoid stale data issues
   });
 
-  // Initialize Session
+  // Initialize Session - More stable dependency array
   useEffect(() => {
     if (agent && !sessionId) {
       startNewChat();
     }
-  }, [agent]);
+  }, [agent?.id]); // Only depend on agent ID, not whole agent object
 
-  // Scroll handling
+  // Scroll handling - More stable dependencies
   useEffect(() => {
     if (isAutoScrolling && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isAutoScrolling, sendMessageMutation.isPending]); // Add isPending to scroll when typing indicator appears
+  }, [messages.length, isAutoScrolling, sendMessageMutation.isPending]); // Use messages.length to prevent unnecessary re-renders
 
   const startNewChat = () => {
     if (!agent) return;
@@ -122,7 +136,7 @@ export default function MobileTesterChat() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-white">
+    <div className="flex flex-col h-screen bg-white sm:h-[100dvh]">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -161,16 +175,16 @@ export default function MobileTesterChat() {
             </div>
         )}
         
-        {messages.map((msg: any) => (
-          <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+        {messages.map((msg: any, index: number) => (
+          <div key={msg.id || `msg-${index}`} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
             <div
-              className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
+              className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-br-none'
                   : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
               }`}
             >
-              <div className="whitespace-pre-wrap">{msg.content || (msg.reasoning_content ? "Thinking..." : "")}</div>
+              <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content || (msg.reasoning_content ? "Thinking..." : "")}</div>
             </div>
             
             {/* Reasoning Content Bubble */}
@@ -179,7 +193,7 @@ export default function MobileTesterChat() {
                     <div className="flex items-center gap-1.5 mb-1 font-semibold text-purple-700 uppercase tracking-wider text-[10px]">
                         <ArrowPathIcon className="w-3 h-3" /> Reasoning Process
                     </div>
-                    <div className="whitespace-pre-wrap leading-relaxed opacity-90">
+                    <div className="whitespace-pre-wrap leading-relaxed opacity-90 break-words overflow-wrap-anywhere">
                         {msg.reasoning_content}
                     </div>
                 </div>
