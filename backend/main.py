@@ -6,7 +6,7 @@ from app.db.database import engine
 from app.models import models
 
 # Create database tables
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Chatbot API Server",
