@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
-import type { Agent, Session, Message, CreateAgentRequest, UpdateAgentRequest, CreateSessionRequest } from '../types';
+import type { Agent, Session, Message, CreateAgentRequest, UpdateAgentRequest, CreateSessionRequest, AgentKnowledgeFile, FileUploadResponse } from '../types';
 
 export function useAgents() {
   return useQuery({
@@ -181,5 +181,50 @@ export function useSessionAnalyticsDetail(sessionId: string) {
     queryKey: ['session-analytics', sessionId],
     queryFn: () => api.getSessionAnalyticsDetail(sessionId).then(res => res.data),
     enabled: !!sessionId,
+  });
+}
+
+// Agent File Management Hooks
+export function useAgentWithFiles(agentId: string) {
+  return useQuery({
+    queryKey: ['agent', agentId, 'with-files'],
+    queryFn: () => api.getAgentWithFiles(agentId).then(res => res.data),
+    enabled: !!agentId,
+  });
+}
+
+export function useAgentFiles(agentId: string) {
+  return useQuery({
+    queryKey: ['agent', agentId, 'files'],
+    queryFn: () => api.getAgentFiles(agentId).then(res => res.data),
+    enabled: !!agentId,
+  });
+}
+
+export function useUploadAgentFile() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ agentId, file, purpose }: { agentId: string; file: File; purpose?: string }) => 
+      api.uploadAgentFile(agentId, file, purpose).then(res => res.data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['agent', variables.agentId, 'with-files'] });
+      queryClient.invalidateQueries({ queryKey: ['agent', variables.agentId, 'files'] });
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    },
+  });
+}
+
+export function useDeleteAgentFile() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ agentId, fileId }: { agentId: string; fileId: string }) => 
+      api.deleteAgentFile(agentId, fileId).then(res => res.data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['agent', variables.agentId, 'with-files'] });
+      queryClient.invalidateQueries({ queryKey: ['agent', variables.agentId, 'files'] });
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    },
   });
 }

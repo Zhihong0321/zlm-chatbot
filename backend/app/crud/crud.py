@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import List, Optional
-from app.models.models import Agent, ChatSession, ChatMessage, SessionKnowledge
-from app.schemas.schemas import AgentCreate, AgentUpdate, ChatSessionCreate, ChatMessageCreate, SessionKnowledgeCreate
+from app.models.models import Agent, ChatSession, ChatMessage, SessionKnowledge, AgentKnowledgeFile
+from app.schemas.schemas import AgentCreate, AgentUpdate, ChatSessionCreate, ChatMessageCreate, SessionKnowledgeCreate, AgentKnowledgeFileCreate
 
 
 def get_agent(db: Session, agent_id: int) -> Optional[Agent]:
@@ -150,3 +150,84 @@ def create_session_knowledge(db: Session, knowledge: SessionKnowledgeCreate) -> 
 
 def get_session_knowledge(db: Session, session_id: int) -> List[SessionKnowledge]:
     return db.query(SessionKnowledge).filter(SessionKnowledge.session_id == session_id).all()
+
+
+# Agent Knowledge File Management CRUD
+def get_agent_knowledge_file(db: Session, file_id: int) -> Optional[AgentKnowledgeFile]:
+    return db.query(AgentKnowledgeFile).filter(AgentKnowledgeFile.id == file_id).first()
+
+
+def get_agent_knowledge_files(db: Session, agent_id: int) -> List[AgentKnowledgeFile]:
+    return db.query(AgentKnowledgeFile).filter(
+        AgentKnowledgeFile.agent_id == agent_id,
+        AgentKnowledgeFile.status == "active"
+    ).order_by(desc(AgentKnowledgeFile.created_at)).all()
+
+
+def create_agent_knowledge_file(db: Session, file: AgentKnowledgeFileCreate) -> AgentKnowledgeFile:
+    db_file = AgentKnowledgeFile(**file.dict())
+    db.add(db_file)
+    db.commit()
+    db.refresh(db_file)
+    return db_file
+
+
+def delete_agent_knowledge_file(db: Session, file_id: int, agent_id: int) -> bool:
+    db_file = db.query(AgentKnowledgeFile).filter(
+        AgentKnowledgeFile.id == file_id,
+        AgentKnowledgeFile.agent_id == agent_id
+    ).first()
+    if not db_file:
+        return False
+    
+    # Soft delete - mark as deleted instead of removing
+    db_file.status = "deleted"
+    db.commit()
+    return True
+
+
+def get_agent_with_files(db: Session, agent_id: int) -> Optional[Agent]:
+    return db.query(Agent).filter(Agent.id == agent_id).first()
+
+
+def upload_file_to_zai(file_content: bytes, filename: str, api_key: str) -> dict:
+    """Upload file to Z.ai API and return file info"""
+    import requests
+    from datetime import datetime, timedelta
+    
+    url = "https://api.z.ai/api/paas/v4/files"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "application/json"
+    }
+    
+    files = {
+        'file': (filename, file_content, 'text/plain'),
+        'purpose': (None, 'agent')
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, files=files)
+        
+        if response.status_code == 200:
+            result = response.json()
+            # Calculate expiration date (180 days from now)
+            expires_at = datetime.utcnow() + timedelta(days=180)
+            
+            return {
+                "success": True,
+                "file_id": result.get('id'),
+                "filename": result.get('filename'),
+                "size": result.get('bytes'),
+                "expires_at": expires_at.isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Upload failed: {response.status_code} - {response.text}"
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Upload error: {str(e)}"
+        }

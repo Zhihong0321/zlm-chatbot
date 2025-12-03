@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { useAgents, useCreateAgent, useUpdateAgent, useDeleteAgent } from '../hooks/useApi';
+import React, { useState, useRef } from 'react';
+import { useAgents, useCreateAgent, useUpdateAgent, useDeleteAgent, useUploadAgentFile, useDeleteAgentFile, useAgentWithFiles } from '../hooks/useApi';
+import type { Agent, AgentKnowledgeFile } from '../types';
 
 export default function AgentBuilder() {
   const { data: agents, isLoading, error } = useAgents();
   const createAgentMutation = useCreateAgent();
   const updateAgentMutation = useUpdateAgent();
   const deleteAgentMutation = useDeleteAgent();
+  const uploadFileMutation = useUploadAgentFile();
+  const deleteFileMutation = useDeleteAgentFile();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -17,6 +20,8 @@ export default function AgentBuilder() {
 
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setFormData({
@@ -84,6 +89,123 @@ export default function AgentBuilder() {
       ...prev,
       [name]: name === 'temperature' ? parseFloat(value) : value,
     }));
+  };
+
+  const handleFileUpload = async (agentId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await uploadFileMutation.mutateAsync({ agentId, file, purpose: 'agent' });
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+    }
+  };
+
+  const handleDeleteFile = async (agentId: string, fileId: string) => {
+    try {
+      await deleteFileMutation.mutateAsync({ agentId, fileId });
+    } catch (error) {
+      console.error('Failed to delete file:', error);
+    }
+  };
+
+  const toggleFilesSection = (agentId: string) => {
+    setExpandedAgentId(expandedAgentId === agentId ? null : agentId);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileType: string) => {
+    switch (fileType) {
+      case 'pdf':
+        return '📄';
+      case 'doc':
+      case 'docx':
+        return '📝';
+      case 'txt':
+        return '📃';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return '🖼️';
+      default:
+        return '📎';
+    }
+  };
+
+  // Component for Agent Files Management
+  const AgentFilesSection = ({ agentId }: { agentId: string }) => {
+    const { data: agentWithFiles, isLoading: filesLoading } = useAgentWithFiles(agentId);
+
+    return (
+      <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-gray-700">Knowledge Files</h4>
+          <div className="flex space-x-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.pdf,.doc,.docx,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+              onChange={(e) => handleFileUpload(agentId, e)}
+              className="hidden"
+              id={`file-upload-${agentId}`}
+            />
+            <label
+              htmlFor={`file-upload-${agentId}`}
+              className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors"
+            >
+              {uploadFileMutation.isPending ? 'Uploading...' : 'Upload File'}
+            </label>
+          </div>
+        </div>
+        
+        {filesLoading ? (
+          <div className="text-sm text-gray-500">Loading files...</div>
+        ) : agentWithFiles?.knowledge_files?.length > 0 ? (
+          <div className="space-y-2">
+            {agentWithFiles.knowledge_files.map((file) => (
+              <div
+                key={file.id}
+                className="flex items-center justify-between bg-gray-50 rounded p-2 text-xs"
+              >
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  <span className="text-lg">{getFileIcon(file.file_type)}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 truncate" title={file.original_filename}>
+                      {file.original_filename}
+                    </div>
+                    <div className="text-gray-500">
+                      {formatFileSize(file.file_size)} • {file.file_type.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteFile(agentId, file.id)}
+                  className="text-red-500 hover:text-red-700 px-1 py-0.5"
+                  title="Delete file"
+                  disabled={deleteFileMutation.isPending}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500 italic">No knowledge files uploaded</div>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -226,7 +348,7 @@ export default function AgentBuilder() {
           {agents?.map((agent) => (
             <div
               key={agent.id}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow flex flex-col h-full"
+              className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col h-full"
             >
               <div className="flex-grow">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">{agent.name}</h3>
@@ -235,6 +357,26 @@ export default function AgentBuilder() {
                   <span className="bg-gray-100 px-2 py-1 rounded">{agent.model}</span>
                   <span className="bg-gray-100 px-2 py-1 rounded">Temp: {agent.temperature}</span>
                 </div>
+                
+                {/* File Management Section */}
+                <button
+                  onClick={() => toggleFilesSection(agent.id)}
+                  className="w-full text-left flex items-center justify-between bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded text-sm transition-colors"
+                >
+                  <span className="flex items-center">
+                    📁 Knowledge Files
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                      View Files
+                    </span>
+                  </span>
+                  <span className="text-gray-400">
+                    {expandedAgentId === agent.id ? '▼' : '▶'}
+                  </span>
+                </button>
+                
+                {expandedAgentId === agent.id && (
+                  <AgentFilesSection agentId={agent.id} />
+                )}
               </div>
               
               <div className="border-t border-gray-100 pt-3 mt-auto flex justify-end space-x-2">

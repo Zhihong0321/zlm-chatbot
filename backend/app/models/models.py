@@ -28,6 +28,7 @@ class Agent(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.current_timestamp())
     
     chat_sessions = relationship("ChatSession", back_populates="agent")
+    knowledge_files = relationship("AgentKnowledgeFile", back_populates="agent", cascade="all, delete-orphan")
 
 
 class ChatSession(Base):
@@ -72,3 +73,23 @@ class SessionKnowledge(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
     
     session = relationship("ChatSession", back_populates="knowledge_files")
+
+
+class AgentKnowledgeFile(Base):
+    __tablename__ = "agent_knowledge_files"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    zai_file_id = Column(String(255), nullable=False, unique=True)  # Z.ai file ID
+    filename = Column(String(255), nullable=False)
+    original_filename = Column(String(255), nullable=False)
+    file_size = Column(Integer)
+    file_type = Column(String(10))  # txt, pdf, doc, etc.
+    purpose = Column(String(20), default="agent")  # agent, assistant, etc.
+    status = Column(String(20), default="active")  # active, deleted, expired
+    metadata = Column(JSON)  # Additional file metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.current_timestamp())
+    expires_at = Column(DateTime(timezone=True))  # When Z.ai file expires (180 days)
+    
+    agent = relationship("Agent", back_populates="knowledge_files")

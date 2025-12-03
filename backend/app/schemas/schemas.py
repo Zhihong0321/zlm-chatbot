@@ -149,3 +149,58 @@ class BulkDeleteRequest(BaseModel):
 
 class BulkDeleteResponse(BaseModel):
     message: str
+
+
+# File Management Schemas
+class AgentKnowledgeFileBase(BaseModel):
+    zai_file_id: str
+    filename: str
+    original_filename: str
+    file_size: Optional[int] = None
+    file_type: Optional[str] = None
+    purpose: str = "agent"
+    status: str = "active"
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class AgentKnowledgeFileCreate(AgentKnowledgeFileBase):
+    agent_id: int
+
+
+class AgentKnowledgeFileUpload(BaseModel):
+    agent_id: int
+    purpose: str = "agent"
+
+
+class AgentKnowledgeFileResponse(AgentKnowledgeFileBase):
+    id: int
+    agent_id: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+    expires_at: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
+
+
+class FileUploadResponse(BaseModel):
+    success: bool
+    file_id: Optional[str] = None
+    filename: Optional[str] = None
+    message: str
+    size: Optional[int] = None
+
+
+class AgentWithFiles(Agent):
+    knowledge_files: List[AgentKnowledgeFileResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+
+class ChatWithKnowledgeRequest(BaseModel):
+    message: str
+    session_id: int
+    agent_id: Optional[int] = None
+    use_knowledge: bool = True
+    file_context: Optional[str] = None  # Optional specific file to reference

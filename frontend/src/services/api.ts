@@ -32,6 +32,23 @@ export const api = {
   updateAgent: (id: string, data: any) => apiClient.put(`/api/v1/agents/${id}`, data),
   deleteAgent: (id: string) => apiClient.delete(`/api/v1/agents/${id}`),
   
+  // Agent File Management
+  getAgentWithFiles: (id: string) => apiClient.get(`/api/v1/agents/${id}/with-files`),
+  getAgentFiles: (id: string) => apiClient.get(`/api/v1/agents/${id}/files`),
+  uploadAgentFile: (agentId: string, file: File, purpose?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (purpose) {
+      formData.append('purpose', purpose);
+    }
+    return apiClient.post(`/api/v1/agents/${agentId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  deleteAgentFile: (agentId: string, fileId: string) => apiClient.delete(`/api/v1/agents/${agentId}/files/${fileId}`),
+  
   // Sessions
   getSessions: () => apiClient.get('/api/v1/sessions/'),
   getSession: (id: string) => apiClient.get(`/api/v1/sessions/${id}`),

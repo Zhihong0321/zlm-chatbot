@@ -85,3 +85,37 @@ export interface HealthResponse {
   version: string;
   database: string;
 }
+
+// File Management Types
+export interface AgentKnowledgeFile {
+  id: string;
+  agent_id: string;
+  zai_file_id: string;
+  filename: string;
+  original_filename: string;
+  file_size: number;
+  file_type: string;
+  purpose: string;
+  status: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at?: string;  
+  expires_at?: string;
+}
+
+export interface AgentWithFiles extends Agent {
+  knowledge_files: AgentKnowledgeFile[];
+}
+
+export interface FileUploadResponse {
+  success: boolean;
+  file_id?: string;
+  filename?: string;
+  message: string;
+  size?: number;
+}
+
+export interface FileUploadRequest {
+  agent_id: string;
+  purpose?: string;
+}
