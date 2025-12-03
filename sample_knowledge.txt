@@ -1,0 +1,34 @@
+Sample Knowledge Base Document
+
+Title: Artificial Intelligence Basics
+Created: December 2025
+
+Content:
+This document provides basic information about AI and machine learning.
+
+1. Artificial Intelligence (AI) is the simulation of human intelligence in machines.
+2. Machine Learning is a subset of AI that enables systems to learn from data.
+3. Deep Learning is a subset of machine learning using neural networks.
+4. Natural Language Processing (NLP) helps computers understand human language.
+5. Computer Vision enables machines to interpret visual information.
+
+Key Terms:
+- Neural Networks: Computing systems inspired by biological neural networks
+- Algorithm: A set of rules to be followed in calculations or problem-solving
+- Data Science: An interdisciplinary field that uses scientific methods to extract knowledge from data
+
+Applications:
+- Virtual assistants (like Siri, Alexa)
+- Recommendation systems (Netflix, Amazon)
+- Autonomous vehicles
+- Medical diagnosis
+- Financial fraud detection
+
+Important Facts:
+- AI can process large amounts of data faster than humans
+- Machine learning models improve with more data
+- Deep learning has revolutionized computer vision
+- NLP is used in chatbots and translation services
+
+Conclusion:
+AI and machine learning are transforming many industries and will continue to advance rapidly in the coming years.

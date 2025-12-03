@@ -191,11 +191,11 @@ def get_agent_with_files(db: Session, agent_id: int) -> Optional[Agent]:
 
 
 def upload_file_to_zai(file_content: bytes, filename: str, api_key: str) -> dict:
-    """Upload file to Z.ai Coding API and return file info"""
+    """Upload file to Z.ai Main API (only endpoint that supports file upload)"""
     import requests
     from datetime import datetime, timedelta
     
-    url = "https://api.z.ai/api/coding/paas/v4/files"
+    url = "https://api.z.ai/api/paas/v4/files"  # Use main endpoint for file upload
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json"

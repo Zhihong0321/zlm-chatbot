@@ -1,0 +1,333 @@
+MCP (Model Context Protocol) with GLM Coding AI - Complete Guide
+========================================================
+
+🎯 KEY CONCEPT: MCP is the "USB-C for AI" - a universal protocol that lets AI models access external tools, databases, and data sources.
+
+🤔 WHAT MCP SOLVES:
+• Traditional approach: Each tool = custom integration = complex
+• MCP approach: Standard protocol = universal access
+• Analogous to: USB-C for devices vs. proprietary connectors
+
+📋 CORE COMPONENTS:
+• MCP Client: The AI application (Claude Code, VSCode, your app)
+• MCP Server: The tool/data source (database, web scraper, file system)
+• Protocol: Standardized communication layer
+
+🏗️ ARCHITECTURE:
+┌─────────────┐    MCP Protocol    ┌─────────────────┐
+│   GLM AI     │◄──────►◄──────────◄──────┐◄──►│  MCP Server    │
+│   (Client)   │    Communication   │   │  (Data Source)  │
+└─────────────┘    Layer           │   │                 │
+     ▲                    ▲                    ▲
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Files      │    │    Databases│    │   Web APIs   │
+│   APIs       │    │    Services │    │   Tools      │
+└─────────────┘    └─────────────┘    └─────────────┘
+
+🔧 HOW MCP WORKS WITH GLM CODING AI:
+
+1. DISCOVERY PHASE:
+   GLM AI discovers available tools automatically
+   Server advertises: "I have these capabilities/tools"
+   No hardcoded function definitions needed
+
+2. INVOCATION PHASE:
+   GLM AI decides: "I need to access X data"
+   Makes structured request via MCP protocol
+   Server processes and returns results
+
+3. RESULTS PHASE:
+   Server returns structured response
+   GLM AI processes information
+   Continues conversation with context
+
+🌟 Z.ai GLM + MCP INTEGRATION:
+
+🎯 OFFICIAL Z.ai MCP SERVERS:
+✅ Vision MCP Server - Image/video analysis for GLM-4.5V
+✅ Web Reader MCP Server - Web scraping and content extraction
+✅ Database MCP Servers - PostgreSQL, MongoDB, etc.
+✅ File System MCP Servers - Local file access
+
+🔧 AUTHENTICATION:
+• OAuth 2.1 for secure connections
+• API key management
+• User consent and permissions
+
+📊 CONFIGURATION EXAMPLE:
+{
+  "mcpServers": [
+    {
+      "command": "npx -y @zai/vision-mcp-server",
+      "env": {
+        "ZAI_API_KEY": "your_key_here"
+      }
+    },
+    {
+      "command": "npx -y @zai/web-reader-mcp-server"
+    }
+  ]
+}
+
+💻 PRACTICAL IMPLEMENTATION:
+
+1. FOR YOUR Z.ai APPLICATION:
+// Backend MCP Server (Node.js)
+const { Server } = require('@modelcontextprotocol/sdk/server.js');
+
+const server = new Server(
+  {
+    name: "zlm-knowledge-base",
+    version: "1.0.0",
+  },
+  {
+    capabilities: {
+      tools: [
+        {
+          name: "read_document",
+          description: "Read uploaded documents",
+          inputSchema: {
+            type: "object",
+            properties: {
+              documentId: { type: "string" }
+            }
+          }
+        }
+      ]
+    }
+  }
+);
+
+// Tool handler
+server.setRequestHandler('tools/call', async (request) => {
+  const { name, arguments } = request.params;
+  
+  if (name === 'read_document') {
+    const { documentId } = arguments;
+    const doc = await getDocument(documentId);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: doc.content
+        }
+      ],
+      isError: false,
+    };
+  }
+});
+
+2. GLM AI Communication:
+// The GLM AI discovers and uses tools automatically
+{
+  "role": "user",
+  "content": "Read the auth system document and analyze security"
+}
+
+// GLM AI automatically:
+// 1. Discovers "read_document" tool
+// 2. Calls MCP server
+// 3. Processes returned content
+
+🚀 BENEFITS FOR YOUR Z.ai APPLICATION:
+
+✅ DYNAMIC TOOL ACCESS:
+• No hardcoded function definitions
+• Tools discovered automatically at runtime
+• Add new capabilities without code changes
+
+✅ STANDARDIZED INTEGRATION:
+• Single protocol for multiple data sources
+• Consistent interface across tools
+• Reduces development complexity
+
+✅ SECURE DATA ACCESS:
+• OAuth 2.1 authentication
+• Centralized permission management
+• No direct database connections from AI
+
+✅ CONTEXT RETENTION:
+• Multi-turn conversations remembered
+• Tool results become part of conversation
+• Enhanced contextual understanding
+
+🏢 REAL-WORLD APPLICATIONS:
+
+📄 DOCUMENT MANAGEMENT:
+MCP handles: File reading, retrieval, metadata
+GLM AI: Analyzes content, answers questions
+Result: Smart document assistant
+
+🔍 CODE REPOSITORY ACCESS:
+MCP handles: Git operations, file scanning, diff viewing  
+GLM AI: Reviews code, suggests changes, explains logic
+Result: AI code reviewer
+
+🌐 WEB CONTENT SCRAPING:
+MCP handles: HTTP requests, content extraction, parsing
+GLM AI: Analyzes web content, summarizes findings
+Result: Web research assistant
+
+💾 DATABASE INTEGRATION:
+MCP handles: SQL queries, data retrieval, filtering
+GLM AI: Analyzes data, generates reports, insights
+Result: Data analyst assistant
+
+⚡ IMPLEMENTATION STRATEGIES:
+
+1. BACKEND MCP SERVER (Recommended):
+// Node.js server with Z.ai integration
+// Handles database/file operations
+// Secure data access
+// Centralized tool management
+
+2. DIRECT CLIENT MCP:
+// Direct integration in your application
+// Simple tools, no external dependencies
+// Faster for basic use cases
+
+3. HYBRID APPROACH:
+// Basic tools: Direct client MCP
+// Complex tools: Backend MCP server
+// Best of both worlds
+
+🛠️ SECURITY CONSIDERATIONS:
+
+✅ OAuth 2.1 Authentication
+✅ Request validation and sanitization  
+✅ Rate limiting per user
+✅ Audit logging for tool access
+✅ Permission-based access control
+
+📈 GLM AI + MCP WORKFLOW:
+
+1. CONFIGURATION:
+MCP_SERVERS=[
+  {
+    "name": "zlm-codebase",
+    "command": "node server/codebase.js",
+    "args": ["--project-path", "./src"]
+  }
+]
+
+2. DISCOVERY:
+GLM AI automatically identifies tools:
+- read_file
+- list_directory
+- search_codebase
+- git_status
+
+3. INTERACTION:
+User: "Find all auth functionality in the codebase"
+GLM AI: 
+• Discovers relevant tools automatically
+• Calls search_codebase("auth functionality")  
+• Processes results
+• Provides comprehensive answer
+
+4. CONTEXT ENRICHMENT:
+Tool results become part of conversation
+Subsequent queries reference earlier-found content
+Maintains conversation coherence
+
+🎯 ADVANCED MCP FEATURES:
+
+✅ TOOL CHAINS:
+GLM AI can call multiple tools in sequence
+Example: read_file → analyze_code → suggest_improvements
+
+✅ DYNAMIC DISCOVERY:
+New tools automatically available after server restart
+No need to restart AI application
+
+✅ ERROR HANDLING:
+Structured error responses from MCP servers
+GLM AI can retry with different approaches
+Robust failure handling
+
+🌟 MCP SERVER EXAMPLES BY Z.ai:
+
+1. Vision MCP Server:
+Tools: analyze_image, extract_text, detect_objects
+Usage: "Upload screenshot and explain code in image"
+
+2. Web Reader MCP Server:
+Tools: fetch_webpage, extract_content, get_metadata  
+Usage: "Read documentation from z.ai docs"
+
+3. Database MCP Servers:
+Tools: query_sql, get_schema, analyze_table
+Usage: "Analyze user data for patterns"
+
+🔧 BUILDING YOUR OWN MCP SERVER:
+
+// Basic MCP Server for Z.ai applications
+const { Server } = require('@modelcontextprotocol/sdk/server.js');
+
+class ZLMDocumentServer extends Server {
+  constructor() {
+    super({
+      name: "zlm-document-manager",
+      version: "1.0.0",
+    });
+    
+    // Add document tools
+    this.addTool({
+      name: 'list_documents',
+      description: 'List all uploaded documents',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filter: { type: 'string', description: 'Filter criteria' }
+        }
+      }
+    });
+  }
+  
+  async handleToolCall(name, args) {
+    switch(name) {
+      case 'list_documents':
+        return await this.listDocuments(args.filter);
+      default:
+        throw new Error(`Tool ${name} not found`);
+    }
+  }
+}
+
+🚀 INTEGRATION WITH YOUR EXISTING Z.ai APP:
+
+1. UPDATE BACKEND:
+// Add MCP server support
+// Handle tool discovery and invocation
+// Secure data access layer
+
+2. MODIFY FRONTEND:
+// Enable MCP client capabilities  
+// Display tool results to users
+// Enhanced file management
+
+3. TESTING:
+// Test MCP server with GLM AI
+// Verify tool calling functionality
+// Monitor performance and reliability
+
+🌟 SUMMARY:
+
+🎯 MCP transforms Z.ai GLM coding AI from:
+Static function calling → Dynamic tool discovery
+
+📈 Key Benefits:
+✅ Universal protocol for tool integration
+✅ Automatic tool discovery and invocation
+✅ Secure data access patterns
+✅ Enhanced contextual understanding
+✅ Scalable architecture
+
+🔧 For Your Application:
+✅ Replace static function definitions
+✅ Implement smart document management
+✅ Enable database access without direct connections
+✅ Support web content retrieval
+✅ Create powerful AI coding assistant
+
+🎯 Result: Your Z.ai AI becomes significantly more capable with access to external tools and data, all through the standardized MCP protocol.
