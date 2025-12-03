@@ -32,5 +32,5 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 ENV PYTHONPATH=/app
 ENV PORT=8000
 
-# Start command
-CMD cd backend && cd .. && python app.py
+# Start command - Run migrations then start app
+CMD cd backend && alembic upgrade head && cd .. && python app.py
