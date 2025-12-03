@@ -22,15 +22,6 @@ export default function MobileTesterChat() {
     enabled: !!agentId
   });
 
-  // Fetch Messages if session exists
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
-    queryKey: ['messages', sessionId],
-    queryFn: () => api.getSession(sessionId || '').then(res => res.data.messages || []),
-    enabled: !!sessionId,
-    refetchInterval: 1000, // Simple polling for updates
-    placeholderData: (previousData) => previousData, // Keep previous data while fetching to prevent flash
-  });
-
   // Create Session Mutation
   const createSessionMutation = useMutation({
     mutationFn: (data: any) => api.createSession(data),
@@ -44,13 +35,9 @@ export default function MobileTesterChat() {
   const sendMessageMutation = useMutation({
     mutationFn: (data: any) => api.sendMessage(sessionId || '', data),
     onMutate: async (newData) => {
-      // Cancel outgoing refetches so they don't overwrite optimistic update
       await queryClient.cancelQueries({ queryKey: ['messages', sessionId] });
-
-      // Snapshot previous value
       const previousMessages = queryClient.getQueryData(['messages', sessionId]);
-
-      // Optimistically update to new value
+      
       queryClient.setQueryData(['messages', sessionId], (old: any[] = []) => [
         ...old,
         {
@@ -61,34 +48,31 @@ export default function MobileTesterChat() {
         },
       ]);
       
-      // Clear input immediately
       setInput('');
       setIsAutoScrolling(true);
-
       return { previousMessages };
     },
     onError: (err, newTodo, context) => {
-      // Rollback on error
       queryClient.setQueryData(['messages', sessionId], context?.previousMessages);
       alert('Failed to send message. Please try again.');
     },
-    onSuccess: (data, variables, context) => {
-        // Manually update cache with the server response to prevent flicker
-        // The server returns the Assistant message. The User message is already optimistically added.
-        // We need to ensure the user message stays (maybe replace temp ID) and add assistant msg.
-        // However, simply invalidating is cleaner IF the fetch is fast enough. 
-        // To avoid the "disappear", we can APPEND the new assistant message to the cache before invalidating.
-        
+    onSuccess: (data) => {
         queryClient.setQueryData(['messages', sessionId], (old: any[] = []) => {
-            // We assume the user message is already there from onMutate. 
-            // We just append the assistant message from the response data.
             return [...old, data.data];
         });
     },
     onSettled: () => {
-      // Refetch after error or success to get real server data
       queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
     },
+  });
+
+  // Fetch Messages (Moved after mutation)
+  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+    queryKey: ['messages', sessionId],
+    queryFn: () => api.getSession(sessionId || '').then(res => res.data.messages || []),
+    enabled: !!sessionId && !sendMessageMutation.isPending, // Now accessing sendMessageMutation is valid
+    refetchInterval: 1000, 
+    placeholderData: (previousData) => previousData, 
   });
 
   // Initialize Session
