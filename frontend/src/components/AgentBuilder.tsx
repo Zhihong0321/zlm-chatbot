@@ -381,6 +381,16 @@ export default function AgentBuilder() {
               
               <div className="border-t border-gray-100 pt-3 mt-auto flex justify-end space-x-2">
                 <button
+                  onClick={() => {
+                     const url = `${window.location.origin}/tester/${agent.id}`;
+                     navigator.clipboard.writeText(url);
+                     alert('Tester link copied to clipboard!');
+                  }}
+                  className="text-sm text-purple-600 hover:text-purple-800 px-2 py-1 rounded hover:bg-purple-50 transition-colors flex items-center gap-1"
+                >
+                   Share
+                </button>
+                <button
                   onClick={() => handleEditClick(agent)}
                   className="text-sm text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
                 >
