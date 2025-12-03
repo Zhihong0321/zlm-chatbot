@@ -8,18 +8,32 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from app.core.config import settings
 
+# Global client instance
+_client = None
+_http_client = None
+
 # Initialize Z.ai client (CODING ENDPOINT ONLY)
 def get_zai_client():
+    global _client, _http_client
+    
+    if _client is not None:
+        return _client
+
     try:
         # Create a custom HTTP client to handle connection details explicitly
-        # This avoids OpenAI client trying to auto-configure proxies in a way that might fail
-        http_client = httpx.Client()
+        # Reuse this http_client to keep connections alive (connection pooling)
+        if _http_client is None:
+            _http_client = httpx.Client(
+                timeout=300.0,  # 5 minute timeout at HTTP level
+                limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+            )
         
-        return OpenAI(
+        _client = OpenAI(
             api_key=settings.ZAI_API_KEY,
             base_url="https://api.z.ai/api/coding/paas/v4",
-            http_client=http_client
+            http_client=_http_client
         )
+        return _client
     except TypeError as e:
         import openai
         # This helps debug if the server is running an old version or if args are wrong

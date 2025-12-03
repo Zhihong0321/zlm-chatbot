@@ -146,12 +146,22 @@ def chat_with_agent(request: ChatRequest, db: Session = Depends(get_db)):
     
     # Get AI response
     try:
+        import time
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        start_time = time.time()
+        
         ai_response = chat_with_zai(
             message=request.message,
             system_prompt=context,
             model=agent.model,
             temperature=agent.temperature
         )
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(f"Z.ai API Latency: {duration:.2f}s. Model: {agent.model}")
         
         # Store user message
         user_message = ChatMessageCreate(
