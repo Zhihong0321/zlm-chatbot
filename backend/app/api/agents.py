@@ -81,63 +81,86 @@ async def upload_agent_file(
     db: Session = Depends(get_db)
 ):
     """Upload a knowledge file to an agent"""
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # Check if agent exists
-    agent = get_agent(db, agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    
-    # Validate file type
-    allowed_types = ["txt", "pdf", "doc", "docx", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png"]
-    file_extension = file.filename.split('.')[-1].lower() if '.' in file.filename else ""
-    
-    if file_extension not in allowed_types:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"File type .{file_extension} not allowed. Supported: {', '.join(allowed_types)}"
+    try:
+        logger.info(f"Upload request received. Agent: {agent_id}, Filename: {file.filename}, Purpose: {purpose}")
+        
+        # Check if agent exists
+        agent = get_agent(db, agent_id)
+        if not agent:
+            logger.error(f"Agent {agent_id} not found during upload")
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Validate file type
+        allowed_types = ["txt", "pdf", "doc", "docx", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png"]
+        file_extension = file.filename.split('.')[-1].lower() if '.' in file.filename else ""
+        
+        logger.info(f"Validating file extension: {file_extension}")
+        if file_extension not in allowed_types:
+            msg = f"File type .{file_extension} not allowed. Supported: {', '.join(allowed_types)}"
+            logger.error(msg)
+            raise HTTPException(status_code=400, detail=msg)
+        
+        # Validate file size (100MB max)
+        content = await file.read()
+        size_mb = len(content) / (1024 * 1024)
+        logger.info(f"File size: {len(content)} bytes ({size_mb:.2f} MB)")
+        
+        if len(content) > 100 * 1024 * 1024:  # 100MB
+            msg = "File too large. Maximum size is 100MB"
+            logger.error(msg)
+            raise HTTPException(status_code=400, detail=msg)
+        
+        # Get API key from environment
+        api_key = os.getenv("ZAI_API_KEY")
+        if not api_key:
+            logger.critical("Z.ai API key not configured in environment")
+            raise HTTPException(status_code=500, detail="Z.ai API key not configured")
+        
+        logger.info("Z.ai API key present. Proceeding to upload to Z.ai")
+        
+        # Upload to Z.ai
+        upload_result = upload_file_to_zai(content, file.filename, api_key)
+        
+        if not upload_result["success"]:
+            logger.error(f"Z.ai upload failed: {upload_result.get('message')}")
+            raise HTTPException(status_code=500, detail=f"File upload failed: {upload_result['message']}")
+        
+        logger.info(f"Z.ai upload successful. File ID: {upload_result.get('file_id')}")
+        
+        # Save file record to database
+        from datetime import datetime, timedelta
+        
+        file_data = AgentKnowledgeFileCreate(
+            agent_id=agent_id,
+            zai_file_id=upload_result["file_id"],
+            filename=upload_result["filename"],
+            original_filename=file.filename,
+            file_size=upload_result["size"],
+            file_type=file_extension,
+            purpose=purpose,
+            status="active",
+            file_metadata={"uploaded_by": "system", "source": "agent_upload"},
+            expires_at=datetime.fromisoformat(upload_result["expires_at"].replace('Z', '+00:00'))
         )
-    
-    # Validate file size (100MB max)
-    content = await file.read()
-    if len(content) > 100 * 1024 * 1024:  # 100MB
-        raise HTTPException(status_code=400, detail="File too large. Maximum size is 100MB")
-    
-    # Get API key from environment
-    api_key = os.getenv("ZAI_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="Z.ai API key not configured")
-    
-    # Upload to Z.ai
-    upload_result = upload_file_to_zai(content, file.filename, api_key)
-    
-    if not upload_result["success"]:
-        raise HTTPException(status_code=500, detail=f"File upload failed: {upload_result['message']}")
-    
-    # Save file record to database
-    from datetime import datetime, timedelta
-    
-    file_data = AgentKnowledgeFileCreate(
-        agent_id=agent_id,
-        zai_file_id=upload_result["file_id"],
-        filename=upload_result["filename"],
-        original_filename=file.filename,
-        file_size=upload_result["size"],
-        file_type=file_extension,
-        purpose=purpose,
-        status="active",
-        file_metadata={"uploaded_by": "system", "source": "agent_upload"},
-        expires_at=datetime.fromisoformat(upload_result["expires_at"].replace('Z', '+00:00'))
-    )
-    
-    db_file = create_agent_knowledge_file(db, file_data)
-    
-    return FileUploadResponse(
-        success=True,
-        file_id=upload_result["file_id"],
-        filename=upload_result["filename"],
-        message="File uploaded successfully",
-        size=upload_result["size"]
-    )
+        
+        db_file = create_agent_knowledge_file(db, file_data)
+        logger.info(f"File record saved to database. ID: {db_file.id}")
+        
+        return FileUploadResponse(
+            success=True,
+            file_id=upload_result["file_id"],
+            filename=upload_result["filename"],
+            message="File uploaded successfully",
+            size=upload_result["size"]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error during file upload")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 
 @router.get("/{agent_id}/with-files", response_model=AgentWithFiles)
