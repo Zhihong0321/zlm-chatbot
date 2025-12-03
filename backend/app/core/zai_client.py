@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from app.core.config import settings
 
-# Initialize Z.ai client
+# Initialize Z.ai client (CODING ENDPOINT ONLY)
 def get_zai_client():
     try:
         # Create a custom HTTP client to handle connection details explicitly
@@ -26,9 +26,10 @@ def get_zai_client():
         raise Exception(f"OpenAI Init Error (v{openai.__version__}): {str(e)}")
 
 
-def chat_with_zai(message: str, system_prompt: str = None, model: str = "glm-4.5", temperature: float = 0.7):
+def chat_with_zai(message: str, system_prompt: str = None, model: str = "glm-4.6", temperature: float = 0.7):
     """
-    Send a message to Z.ai GLM model and get response
+    Send a message to Z.ai GLM coding model and get response
+    NOTE: Uses coding endpoint - available with Z.ai Coding Plan subscription
     """
     client = get_zai_client()
     
@@ -56,4 +57,4 @@ def chat_with_zai(message: str, system_prompt: str = None, model: str = "glm-4.5
             "token_usage": response.usage.model_dump() if response.usage else None
         }
     except Exception as e:
-        raise Exception(f"Z.ai API error: {str(e)}")
+        raise Exception(f"Z.ai Coding API error: {str(e)}")

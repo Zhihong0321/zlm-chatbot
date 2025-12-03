@@ -7,10 +7,10 @@ from openai import OpenAI
 # Load environment variables
 load_dotenv()
 
-# Initialize the OpenAI client with Z.ai's endpoint
+# Initialize the OpenAI client with Z.ai's coding endpoint
 client = OpenAI(
     api_key=os.getenv("ZAI_API_KEY"),
-    base_url="https://api.z.ai/api/paas/v4"
+    base_url="https://api.z.ai/api/coding/paas/v4"
 )
 
 def encode_image(image_path):

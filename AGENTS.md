@@ -80,7 +80,7 @@ load_dotenv()
 # Initialize client with appropriate endpoint
 client = OpenAI(
     api_key=os.getenv("ZAI_API_KEY"),
-    base_url="https://api.z.ai/api/coding/paas/v4"  # or main endpoint
+    base_url="https://api.z.ai/api/coding/paas/v4"  # Coding endpoint only
 )
 ```
 
@@ -162,7 +162,7 @@ elif message.content:
 ### Balance Requirements
 - Main endpoint returns Error 1113 for insufficient balance
 - Coding endpoint works with zero balance (preferred for development)
-- GLM-4.5-Flash is free on main endpoint
+- GLM-4.5-Flash is available on coding endpoint
 
 ### Function Calling Implementation
 Function calling uses OpenAI-compatible format:
@@ -184,7 +184,7 @@ functions = [
 
 ### Vision Model Usage
 For image analysis with GLM-4.5V:
-- Use main endpoint (not coding endpoint)
+- Use coding endpoint (recommended)
 - Encode images as base64
 - Format messages with mixed content types
 - Model: `"glm-4.5v"` (note the 'v' suffix)
@@ -214,6 +214,21 @@ For image analysis with GLM-4.5V:
 
 ## Platform-Specific Notes
 
+### Endpoint Selection - CRITICAL
+**⚠️ CODING ENDPOINT ONLY - NO EXCEPTIONS**
+
+**✅ ALLOWED** (with Z.ai Coding Plan subscription):
+- `https://api.z.ai/api/coding/paas/v4` - Unlimited usage, GLM-4.6, GLM-4.5, GLM-4.5V, GLM-4.5-Air
+- Free for development and testing
+- Provides `reasoning_content` field
+- No balance required
+
+**🚫 FORBIDDEN** - Never use anywhere in this project:
+- `https://api.z.ai/api/paas/v4` - Main endpoint
+- Requires balance/subscription
+- Will fail with Error 1113: Insufficient balance
+- NOT supported with current setup
+
 ### Windows Compatibility
 - Unicode characters avoided in print statements
 - Standard Python libraries used for cross-platform compatibility
@@ -225,6 +240,8 @@ For image analysis with GLM-4.5V:
 ## Security Considerations
 
 - Never hardcode API keys in code
+- ⚠️ NEVER use main endpoint - requires balance and will fail
+- ALWAYS use coding endpoint (works with Z.ai Coding Plan)
 - Use environment variables exclusively
 - `.env` file should be in `.gitignore`
 - API keys follow format: `hash.keyhash` (both parts required)
