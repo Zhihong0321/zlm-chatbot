@@ -48,7 +48,13 @@ def chat_with_zai(message: str, system_prompt: str = None, model: str = "glm-4.6
         )
         
         message = response.choices[0].message
-        content = message.reasoning_content if message.reasoning_content else message.content
+        
+        # Logic to separate Content and Reasoning
+        # If content is present, use it. If empty, fall back to reasoning (some models only output reasoning)
+        # This fixes the issue where reasoning overwrote the actual answer
+        content = message.content
+        if not content and message.reasoning_content:
+             content = message.reasoning_content
         
         return {
             "content": content,
