@@ -1,3 +1,6 @@
+# ⚠️ WARNING: TESTING LOCAL IS STRICTLY PROHIBITED ⚠️
+# DO NOT RUN TESTS LOCALLY. ALL TESTING MUST BE DONE IN THE DEPLOYED ENVIRONMENT.
+
 # Agent Guide for Z.ai Chatbot Examples
 
 This document provides essential information for agents working with the Z.ai GLM model integration examples.

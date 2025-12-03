@@ -1,5 +1,8 @@
 # Z.ai Chatbot Examples
 
+# ⚠️ WARNING: TESTING LOCAL IS STRICTLY PROHIBITED ⚠️
+# DO NOT RUN TESTS LOCALLY. ALL TESTING MUST BE DONE IN THE DEPLOYED ENVIRONMENT.
+
 This project contains example chatbots powered by Z.ai's GLM models, demonstrating different integration approaches and capabilities.
 
 ## Quick Start
