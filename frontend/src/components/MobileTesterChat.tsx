@@ -28,6 +28,7 @@ export default function MobileTesterChat() {
     queryFn: () => api.getSession(sessionId || '').then(res => res.data.messages || []),
     enabled: !!sessionId,
     refetchInterval: 1000, // Simple polling for updates
+    placeholderData: (previousData) => previousData, // Keep previous data while fetching to prevent flash
   });
 
   // Create Session Mutation
@@ -70,6 +71,19 @@ export default function MobileTesterChat() {
       // Rollback on error
       queryClient.setQueryData(['messages', sessionId], context?.previousMessages);
       alert('Failed to send message. Please try again.');
+    },
+    onSuccess: (data, variables, context) => {
+        // Manually update cache with the server response to prevent flicker
+        // The server returns the Assistant message. The User message is already optimistically added.
+        // We need to ensure the user message stays (maybe replace temp ID) and add assistant msg.
+        // However, simply invalidating is cleaner IF the fetch is fast enough. 
+        // To avoid the "disappear", we can APPEND the new assistant message to the cache before invalidating.
+        
+        queryClient.setQueryData(['messages', sessionId], (old: any[] = []) => {
+            // We assume the user message is already there from onMutate. 
+            // We just append the assistant message from the response data.
+            return [...old, data.data];
+        });
     },
     onSettled: () => {
       // Refetch after error or success to get real server data
@@ -209,7 +223,7 @@ export default function MobileTesterChat() {
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white border-t border-gray-200 safe-area-bottom">
+      <div className="p-3 bg-white border-t border-gray-200 safe-area-bottom" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
         <form
             onSubmit={handleSend}
             className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-inner"
@@ -219,7 +233,7 @@ export default function MobileTesterChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-sm h-9 placeholder-gray-400 text-gray-800"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-base h-9 placeholder-gray-400 text-gray-800"
             disabled={sendMessageMutation.isPending}
           />
           <button
