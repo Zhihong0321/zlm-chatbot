@@ -82,8 +82,8 @@ class MCPServerManager:
                 server_data['working_directory'] = ''
                 server_data['health_check_interval'] = 30
                 server_data['process_id'] = None
-                server_data['created_at'] = None
-                server_data['updated_at'] = None
+                server_data['created_at'] = 0.0
+                server_data['updated_at'] = 0.0
                 
                 # Override status from local cache if process is managed by this instance
                 sid = server_data['id']
