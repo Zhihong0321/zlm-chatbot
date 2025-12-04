@@ -168,14 +168,30 @@ def fix_schema_brute_force():
             cursor.execute("CREATE INDEX IF NOT EXISTS ix_mcp_servers_status ON mcp_servers(status);")
             
             # Insert test MCP server
-            cursor.execute("""
-                INSERT INTO mcp_servers (id, name, description, command, enabled, auto_start, status)
-                VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', FALSE, 'stopped')
-                ON CONFLICT (id) DO UPDATE SET 
-                    name = EXCLUDED.name,
-                    description = EXCLUDED.description,
-                    updated_at = CURRENT_TIMESTAMP;
-            """)
+            try:
+                cursor.execute("""
+                    INSERT INTO mcp_servers (id, name, description, command, arguments, environment, working_directory, enabled, auto_start, health_check_interval, status)
+                    VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', '["hello"]', '{}', '/app', TRUE, FALSE, 30, 'stopped')
+                    ON CONFLICT (id) DO UPDATE SET 
+                        name = EXCLUDED.name,
+                        description = EXCLUDED.description,
+                        updated_at = CURRENT_TIMESTAMP;
+                """)
+                results.append("Test server inserted")
+            except Exception as insert_error:
+                # Fallback to simple INSERT if columns missing
+                try:
+                    cursor.execute("""
+                        INSERT INTO mcp_servers (id, name, description, command, enabled, auto_start, status)
+                        VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', FALSE, FALSE, 'stopped')
+                        ON CONFLICT (id) DO UPDATE SET 
+                            name = EXCLUDED.name,
+                            description = EXCLUDED.description,
+                            updated_at = CURRENT_TIMESTAMP;
+                    """)
+                    results.append("Test server inserted (simple version)")
+                except Exception as fallback_error:
+                    results.append(f"Failed to insert test server: {fallback_error}")
             
             results.append("Created mcp_servers table with test server")
         except Exception as e:
