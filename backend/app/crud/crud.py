@@ -56,7 +56,8 @@ def safe_commit(db: Session):
         raise e
 
 def get_chat_session(db: Session, session_id: int) -> Optional[ChatSession]:
-    return db.query(ChatSession).options(joinedload(ChatSession.agent)).filter(ChatSession.id == session_id).first()
+    # Use explicit query to avoid eager loading problems with missing columns
+    return db.query(ChatSession).filter(ChatSession.id == session_id).first()
 
 
 def get_chat_sessions(db: Session, skip: int = 0, limit: int = 100, include_archived: bool = False) -> List[ChatSession]:

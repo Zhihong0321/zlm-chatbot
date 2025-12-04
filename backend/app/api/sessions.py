@@ -216,10 +216,38 @@ def get_activity_timeline(
 
 @router.get("/{session_id}", response_model=ChatSessionSchema)
 def read_session(session_id: int, db: Session = Depends(get_db)):
-    db_session = get_chat_session(db, session_id=session_id)
-    if db_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return db_session
+    try:
+        # Use explicit query to avoid lazy load issues with schema mismatch
+        # This avoids get_chat_session which might use joinedload
+        from app.models.models import Agent
+        
+        db_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        if db_session is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+            
+        # Explicitly load agent (new query)
+        agent = db.query(Agent).filter(Agent.id == db_session.agent_id).first()
+        
+        # Manually construct response to ensure control over serialization
+        # Fetch last message if needed, though detail view might not need it
+        return ChatSessionSchema(
+            id=db_session.id,
+            title=db_session.title,
+            agent_id=db_session.agent_id,
+            message_count=db_session.message_count,
+            is_archived=db_session.is_archived,
+            created_at=db_session.created_at,
+            updated_at=db_session.updated_at,
+            agent=agent,
+            last_ai_response=None # Not critical for detail view
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).error(f"Error reading session {session_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.delete("/{session_id}")
@@ -231,13 +259,22 @@ def delete_session_endpoint(session_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{session_id}/history", response_model=List[ChatMessageSchema])
 def get_session_history(session_id: int, db: Session = Depends(get_db)):
-    # Verify session exists
-    db_session = get_chat_session(db, session_id=session_id)
-    if db_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    messages = get_chat_messages(db, session_id=session_id)
-    return messages
+    try:
+        # Verify session exists (using robust query)
+        db_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        if db_session is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Use explicit query for messages
+        messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at).all()
+        return messages
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).error(f"Error reading history for session {session_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.get("/{session_id}/knowledge", response_model=List[SessionKnowledge])
