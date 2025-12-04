@@ -125,14 +125,14 @@ def get_session_analytics(db: Session, session_id: int) -> Optional[dict]:
 def create_chat_message(db: Session, message: ChatMessageCreate) -> ChatMessage:
     db_message = ChatMessage(**message.dict())
     db.add(db_message)
-    db.commit()
-    db.refresh(db_message)
     
-    # Update session message count and updated_at
+    # Update session message count and updated_at (don't commit here - let caller handle it)
     session = db.query(ChatSession).filter(ChatSession.id == message.session_id).first()
     if session:
         session.message_count += 1
-        db.commit()
+    
+    db.commit()  # Single commit for both operations
+    db.refresh(db_message)
     
     return db_message
 

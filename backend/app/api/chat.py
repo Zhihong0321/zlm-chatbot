@@ -37,27 +37,27 @@ def send_message(
         
         # Get agent info and knowledge context
         agent = db_session.agent
-    knowledge_files = get_session_knowledge(db, session_id=session_id)
-    
-    # Build context
-    context = f"Agent: {agent.name}\nSystem Prompt: {agent.system_prompt}"
-    
-    if knowledge_files:
-        context += "\n\nKnowledge Context:\n"
-        for kf in knowledge_files:
-            context += f"\n--- {kf.filename} ---\n{kf.content}\n"
-    
-    # Get AI response
-    try:
-        ai_response = chat_with_zai(
-            message=message,
-            system_prompt=context,
-            model=agent.model,
-            temperature=agent.temperature
-        )
+        knowledge_files = get_session_knowledge(db, session_id=session_id)
         
-        # Create assistant message
-        assistant_message = ChatMessageCreate(
+        # Build context
+        context = f"Agent: {agent.name}\nSystem Prompt: {agent.system_prompt}"
+        
+        if knowledge_files:
+            context += "\n\nKnowledge Context:\n"
+            for kf in knowledge_files:
+                context += f"\n--- {kf.filename} ---\n{kf.content}\n"
+        
+        # Get AI response
+        try:
+            ai_response = chat_with_zai(
+                message=message,
+                system_prompt=context,
+                model=agent.model,
+                temperature=agent.temperature
+            )
+            
+            # Create assistant message
+            assistant_message = ChatMessageCreate(
             session_id=session_id,
             role="assistant",
             content=ai_response["content"],

@@ -21,20 +21,20 @@ def upgrade() -> None:
     # Add tools_used column if it doesn't exist
     try:
         op.add_column('chat_messages', sa.Column('tools_used', sa.JSON(), nullable=True, comment='List of MCP tools used in this message'))
-        print("✅ Added tools_used column to chat_messages")
+        print("Added tools_used column to chat_messages")
     except sa.exc.ProgrammingError as e:
         if "already exists" in str(e):
-            print("✅ tools_used column already exists in chat_messages")
+            print("tools_used column already exists in chat_messages")
         else:
             raise
     
     # Add mcp_server_responses column if it doesn't exist
     try:
         op.add_column('chat_messages', sa.Column('mcp_server_responses', sa.JSON(), nullable=True, comment='MCP server responses associated with this message'))
-        print("✅ Added mcp_server_responses column to chat_messages")
+        print("Added mcp_server_responses column to chat_messages")
     except sa.exc.ProgrammingError as e:
         if "already exists" in str(e):
-            print("✅ mcp_server_responses column already exists in chat_messages")
+            print("mcp_server_responses column already exists in chat_messages")
         else:
             raise
 

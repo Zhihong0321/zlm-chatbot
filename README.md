@@ -1,35 +1,65 @@
 # Z.ai Chatbot Examples
 
-# ⚠️ WARNING: TESTING LOCAL IS STRICTLY PROHIBITED ⚠️
-# DO NOT RUN TESTS LOCALLY. ALL TESTING MUST BE DONE IN THE DEPLOYED ENVIRONMENT.
-
 This project contains example chatbots powered by Z.ai's GLM models, demonstrating different integration approaches and capabilities.
 
-## Quick Start
+## 🚀 Quick Start - Choose Your Mode
 
-1. **Run the setup script:**
-   ```bash
-   python setup.py
-   ```
-   This will install dependencies and create the .env file.
+This codebase supports **easy switching** between local development and Railway deployment modes.
 
-2. **Get your API key:**
-   - Visit [Z.ai API Console](https://z.ai/manage-apikey/apikey-list)
-   - Copy your API key
+### Option 1: Local Development 🏠
+Perfect for development and testing:
 
-3. **Configure the environment:**
-   - Edit the `.env` file
-   - Replace `your_zai_api_key_here` with your actual API key
+**Windows:**
+```bash
+switch-to-local.bat
+cd backend && uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-4. **Test your connection:**
-   ```bash
-   python test_connection.py
-   ```
+**Linux/Mac:**
+```bash
+./switch-to-local.sh
+cd backend && uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-5. **Run a chatbot:**
-   ```bash
-   python zai_chatbot.py  # Basic chatbot
-   ```
+### Option 2: Railway Deployment 🚂
+Production deployment with managed PostgreSQL:
+
+**Windows:**
+```bash
+switch-to-railway.bat
+git add . && git commit -m "Configure for Railway" && git push origin master
+```
+
+**Linux/Mac:**
+```bash
+./switch-to-railway.sh  
+git add . && git commit -m "Configure for Railway" && git push origin master
+```
+
+## 📖 Detailed Setup
+
+### Local Development Setup
+1. **Install Docker Desktop** (includes PostgreSQL)
+2. **Run setup script:** `switch-to-local` (above)
+3. **Starts PostgreSQL** automatically on `localhost:5433`
+4. **Runs database migrations** automatically
+
+### Railway Deployment Setup  
+1. **Push to GitHub** (triggers auto-deployment)
+2. **Configure Railway** environment variables:
+   - `ZAI_API_KEY` (get from [Z.ai Console](https://z.ai/manage-apikey/apikey-list))
+   - `DATABASE_URL` (auto-provided by Railway PostgreSQL)
+3. **Production runs** automatically
+
+## 📋 Environment Files
+
+- `.env.local` - Local development configuration
+- `.env` - Current active configuration (switch automatically)
+- `.env.example` - Railway deployment template
+
+## 🔧 Manual Setup (Advanced)
+
+If you prefer manual configuration:
 
 ## Important: Coding Endpoint
 
