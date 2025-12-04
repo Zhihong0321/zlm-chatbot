@@ -29,8 +29,17 @@ def create_agent_endpoint(agent: AgentCreate, db: Session = Depends(get_db)):
 @router.get("/", response_model=List[AgentSchema])
 def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     try:
-        agents = get_agents(db, skip=skip, limit=limit)
-        return agents
+        # Use Raw SQL for safety against ORM lazy loading issues
+        from sqlalchemy import text
+        sql = """
+            SELECT id, name, description, system_prompt, model, temperature, is_active, mcp_servers, created_at, updated_at 
+            FROM agents 
+            ORDER BY id 
+            LIMIT :limit OFFSET :skip
+        """
+        result = db.execute(text(sql), {"limit": limit, "skip": skip}).mappings().all()
+        
+        return result
     except Exception as e:
         db.rollback()
         # Log the specific error causing the 500
@@ -41,10 +50,26 @@ def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 @router.get("/{agent_id}", response_model=AgentSchema)
 def read_agent(agent_id: int, db: Session = Depends(get_db)):
-    db_agent = get_agent(db, agent_id=agent_id)
-    if db_agent is None:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    return db_agent
+    try:
+        # Use Raw SQL for safety
+        from sqlalchemy import text
+        sql = """
+            SELECT id, name, description, system_prompt, model, temperature, is_active, mcp_servers, created_at, updated_at 
+            FROM agents 
+            WHERE id = :id
+        """
+        result = db.execute(text(sql), {"id": agent_id}).mappings().first()
+        
+        if result is None:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        import logging
+        logging.error(f"Error reading agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
 
 
 @router.put("/{agent_id}", response_model=AgentSchema)

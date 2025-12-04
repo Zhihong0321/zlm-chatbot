@@ -143,73 +143,90 @@ async def upload_knowledge_file(
 
 @router.post("/chat", response_model=ChatResponse)
 def chat_with_agent(request: ChatRequest, db: Session = Depends(get_db)):
-    # Verify session exists
-    db_session = get_chat_session(db, session_id=request.session_id)
-    if db_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    # Get agent info
-    agent = db_session.agent
-    if request.agent_id:
-        from app.crud.crud import get_agent
-        agent = get_agent(db, request.agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-    
-    # Get knowledge context
-    knowledge_files = get_session_knowledge(db, session_id=request.session_id)
-    
-    # Build context
-    context = f"Agent: {agent.name}\nSystem Prompt: {agent.system_prompt}"
-    
-    if knowledge_files:
-        context += "\n\nKnowledge Context:\n"
-        for kf in knowledge_files:
-            context += f"\n--- {kf.filename} ---\n{kf.content}\n"
-    
-    # Get AI response
     try:
-        import time
-        import logging
-        logger = logging.getLogger(__name__)
+        # Verify session exists
+        from app.models.models import ChatSession, Agent
+        db_session = db.query(ChatSession).filter(ChatSession.id == request.session_id).first()
         
-        start_time = time.time()
+        if db_session is None:
+            raise HTTPException(status_code=404, detail="Session not found")
         
-        ai_response = chat_with_zai(
-            message=request.message,
-            system_prompt=context,
-            model=agent.model,
-            temperature=agent.temperature
-        )
+        # Get agent info
+        agent = None
+        if request.agent_id:
+             agent = db.query(Agent).filter(Agent.id == request.agent_id).first()
+             if not agent:
+                raise HTTPException(status_code=404, detail="Agent not found")
+        else:
+             # Explicitly load agent from session relation ID
+             agent = db.query(Agent).filter(Agent.id == db_session.agent_id).first()
+             if not agent:
+                # Fallback if data is corrupted
+                 raise HTTPException(status_code=404, detail="Agent for session not found")
         
-        end_time = time.time()
-        duration = end_time - start_time
-        logger.info(f"Z.ai API Latency: {duration:.2f}s. Model: {agent.model}")
+        # Get knowledge context
+        knowledge_files = get_session_knowledge(db, session_id=request.session_id)
         
-        # Store user message
-        user_message = ChatMessageCreate(
-            session_id=request.session_id,
-            role="user",
-            content=request.message
-        )
-        create_chat_message(db=db, message=user_message)
+        # Build context
+        context = f"Agent: {agent.name}\nSystem Prompt: {agent.system_prompt}"
         
-        # Store assistant message
-        assistant_message = ChatMessageCreate(
-            session_id=request.session_id,
-            role="assistant",
-            content=ai_response["content"],
-            model=ai_response["model"],
-            token_usage=ai_response["token_usage"]
-        )
-        create_chat_message(db=db, message=assistant_message)
+        if knowledge_files:
+            context += "\n\nKnowledge Context:\n"
+            for kf in knowledge_files:
+                context += f"\n--- {kf.filename} ---\n{kf.content}\n"
         
-        return ChatResponse(
-            message=ai_response["content"],
-            reasoning_content=ai_response.get("reasoning_content"),
-            model=ai_response["model"],
-            token_usage=ai_response["token_usage"] or {}
-        )
-        
+        # Get AI response
+        try:
+            import time
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            start_time = time.time()
+            
+            ai_response = chat_with_zai(
+                message=request.message,
+                system_prompt=context,
+                model=agent.model,
+                temperature=agent.temperature
+            )
+            
+            end_time = time.time()
+            duration = end_time - start_time
+            logger.info(f"Z.ai API Latency: {duration:.2f}s. Model: {agent.model}")
+            
+            # Store user message
+            user_message = ChatMessageCreate(
+                session_id=request.session_id,
+                role="user",
+                content=request.message
+            )
+            create_chat_message(db=db, message=user_message)
+            
+            # Store assistant message
+            assistant_message = ChatMessageCreate(
+                session_id=request.session_id,
+                role="assistant",
+                content=ai_response["content"],
+                model=ai_response["model"],
+                token_usage=ai_response["token_usage"]
+            )
+            create_chat_message(db=db, message=assistant_message)
+            
+            return ChatResponse(
+                message=ai_response["content"],
+                reasoning_content=ai_response.get("reasoning_content"),
+                model=ai_response["model"],
+                token_usage=ai_response["token_usage"] or {}
+            )
+            
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+            
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).error(f"Internal chat error (playground): {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
