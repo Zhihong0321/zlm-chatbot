@@ -57,17 +57,9 @@ class MCPServerManager:
         db = self._get_db()
         try:
             # Simple fixed query with basic columns that always exist
-            # Check available columns first
-            columns_check = db.execute(text("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'mcp_servers' ORDER BY ordinal_position
-            """)).fetchall()
-            available_columns = [row[0] for row in columns_check]
-            print(f"Available columns: {available_columns}")
-            
+            # Query only essential columns that must exist
             result = db.execute(text("""
-                SELECT id, name, description, command, enabled, auto_start, 
-                       health_check_interval, status, process_id, created_at, updated_at
+                SELECT id, name, description, command, enabled, auto_start, status
                 FROM mcp_servers
             """))
             
