@@ -71,6 +71,10 @@ def send_message(
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @router.post("/{session_id}/upload")
