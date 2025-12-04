@@ -2,14 +2,12 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAgents, useSessions, useCreateSession, useSessionHistory, useSendMessage, useUploadFile, useUpdateSession } from '../hooks/useApi';
 import { Agent, Message } from '../types';
-import { useMCPServers, ServerStatusBadge } from './MCPManagement';
 
 export default function ChatInterface() {
   const { sessionId } = useParams<{ sessionId?: string }>();
   const navigate = useNavigate();
   
   const { data: agents } = useAgents();
-  const { servers: mcpServers } = useMCPServers();
   const { data: sessions } = useSessions();
   const createSessionMutation = useCreateSession();
   const sendMessageMutation = useSendMessage();

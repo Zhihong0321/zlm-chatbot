@@ -40,12 +40,6 @@ export default function Layout({ children = null }: LayoutProps) {
                 >
                   Playground
                 </Link>
-                <Link
-                  to="/mcp"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium font-bold"
-                >
-                  🛠️ MCP
-                </Link>
               </div>
             </div>
           </div>

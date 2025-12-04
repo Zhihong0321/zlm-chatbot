@@ -6,10 +6,9 @@ import AgentBuilder from './components/AgentBuilder';
 import ChatPlayground from './components/ChatPlayground';
 import MobileTesterChat from './components/MobileTesterChat';
 import MobileTesterChatSessions from './components/MobileTesterChatSessions';
-import MCPManagementDashboard from './components/MCPManagementDashboard';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import AppProviderWithToast from './AppProviderWithToast';
+import { AppProvider } from './context/AppContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
