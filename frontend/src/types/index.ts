@@ -28,6 +28,26 @@ export interface Message {
   model?: string;
   reasoning_content?: string;
   files?: Array<{
+    id: string;
+    filename: string;
+    original_filename: string;
+    file_size: number;
+    file_type: string;
+    status: string;
+  }>;
+  message_files?: Array<{
+    id: string;
+    file_id: string;
+    message_id: string;
+  }>;
+  token_usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  tools_used?: string[];
+  mcp_server_responses?: any;
+}
     filename: string;
     size: number;
     type: string;

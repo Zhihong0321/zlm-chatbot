@@ -10,3 +10,8 @@ const AppProviderWithToast = ({ children }: AppProviderWithToastProps) => {
 };
 
 export default AppProviderWithToast;
+
+// Provide a simple alert hook for MCP
+export const useAppToast = () => {
+  return { notify: alert };
+};
