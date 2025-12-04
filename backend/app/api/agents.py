@@ -32,7 +32,7 @@ def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
         # Use Raw SQL for safety against ORM lazy loading issues
         from sqlalchemy import text
         sql = """
-            SELECT id, name, description, system_prompt, model, temperature, is_active, mcp_servers, created_at, updated_at 
+            SELECT id, name, description, system_prompt, model, temperature, is_active, created_at, updated_at 
             FROM agents 
             ORDER BY id 
             LIMIT :limit OFFSET :skip
@@ -54,7 +54,7 @@ def read_agent(agent_id: int, db: Session = Depends(get_db)):
         # Use Raw SQL for safety
         from sqlalchemy import text
         sql = """
-            SELECT id, name, description, system_prompt, model, temperature, is_active, mcp_servers, created_at, updated_at 
+            SELECT id, name, description, system_prompt, model, temperature, is_active, created_at, updated_at 
             FROM agents 
             WHERE id = :id
         """
