@@ -56,11 +56,23 @@ class MCPServerManager:
         """List all MCP servers with their status"""
         db = self._get_db()
         try:
-            # Raw SQL to avoid any ORM issues
-            result = db.execute(text("""
-                SELECT id, name, description, command, arguments, environment, 
-                       working_directory, enabled, auto_start, health_check_interval,
-                       status, process_id, created_at, updated_at 
+            # Check what columns exist first
+            columns_result = db.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = 'mcp_servers' ORDER BY ordinal_position
+            """)).fetchall()
+            available_columns = [row[0] for row in columns_result]
+            
+            # Build dynamic query based on available columns
+            required_columns = ['id', 'name', 'description', 'command', 'arguments', 'environment', 
+                              'working_directory', 'enabled', 'auto_start', 'health_check_interval',
+                              'status', 'process_id', 'created_at', 'updated_at']
+            
+            # Use only columns that exist
+            query_columns = [col for col in required_columns if col in available_columns]
+            
+            result = db.execute(text(f"""
+                SELECT {', '.join(query_columns)}
                 FROM mcp_servers
             """)).mappings().all()
             
