@@ -178,5 +178,5 @@ class MCPSystemMetrics(Base):
     id = Column(Integer, primary_key=True, index=True)
     metric_type = Column(String(50), nullable=False)  # server_count, running_count, tool_usage, response_time
     metric_value = Column(Float, nullable=False)
-    metadata = Column(JSON, nullable=True)  # Additional metric details
+    metric_metadata = Column(JSON, nullable=True)  # Additional metric details
     timestamp = Column(DateTime(timezone=True), server_default=func.current_timestamp())
