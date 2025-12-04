@@ -58,20 +58,19 @@ def send_message(
             
             # Create assistant message
             assistant_message = ChatMessageCreate(
-            session_id=session_id,
-            role="assistant",
-            content=ai_response["content"],
-            reasoning_content=ai_response.get("reasoning_content"),
-            model=ai_response["model"],
-            token_usage=ai_response["token_usage"]
-        )
-        db_assistant_message = create_chat_message(db=db, message=assistant_message)
-        
-        return db_assistant_message
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
+                session_id=session_id,
+                role="assistant",
+                content=ai_response["content"],
+                reasoning_content=ai_response.get("reasoning_content"),
+                model=ai_response["model"],
+                token_usage=ai_response["token_usage"]
+            )
+            db_assistant_message = create_chat_message(db=db, message=assistant_message)
+            
+            return db_assistant_message
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
 
 
 @router.post("/{session_id}/upload")
