@@ -15,13 +15,26 @@ def run_migrations_safely():
     
     try:
         # Change to backend directory and run alembic
-        result = subprocess.run(
-            ["alembic", "upgrade", "heads"],
-            cwd=os.path.join(os.getcwd(), "backend"),
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
+        # Try running alembic directly from the current directory if backend fails
+        try:
+            print(f"   Running Alembic from: {os.path.join(os.getcwd(), 'backend')}")
+            result = subprocess.run(
+                ["alembic", "upgrade", "heads"],
+                cwd=os.path.join(os.getcwd(), "backend"),
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+        except FileNotFoundError:
+            # Fallback to try running from current directory if structure is different
+            print(f"   Backend directory not found, trying current directory: {os.getcwd()}")
+            result = subprocess.run(
+                ["alembic", "upgrade", "heads"],
+                cwd=os.getcwd(),
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
         
         if result.returncode == 0:
             print("✅ Migrations completed successfully")

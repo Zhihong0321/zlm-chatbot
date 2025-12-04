@@ -12,7 +12,7 @@ from backend.app.models.models import Base
 
 def check_railway_schema():
     """Check what tables and columns actually exist on Railway"""
-    print("🔍 RAILWAY DATABASE SCHEMA DIAGNOSTIC")
+    print("RAILWAY DATABASE SCHEMA DIAGNOSTIC")
     print("=" * 60)
     
     db_url = os.getenv("DATABASE_URL")
@@ -20,12 +20,12 @@ def check_railway_schema():
         print("❌ DATABASE_URL not set")
         return
     
-    print(f"📊 Database URL: {db_url[:50]}...")
+        print(f"Database URL: {db_url[:50]}...")
     
     try:
         # Test basic connection
         conn = psycopg2.connect(db_url)
-        print("✅ Basic PostgreSQL connection working")
+        print("Basic PostgreSQL connection working")
         
         cursor = conn.cursor()
         
@@ -38,7 +38,7 @@ def check_railway_schema():
         """)
         tables = cursor.fetchall()
         
-        print(f"\n📋 Found {len(tables)} tables:")
+        print(f"\nFound {len(tables)} tables:")
         
         # Check expected tables
         expected_tables = [
@@ -54,18 +54,18 @@ def check_railway_schema():
         
         for table in expected_tables:
             if table in found_tables:
-                print(f"   ✅ {table}")
+                print(f"   - {table}")
             else:
                 missing_tables.append(table)
-                print(f"   ❌ {table} - MISSING")
+                print(f"   - {table} - MISSING")
         
         for table in found_tables:
             if table not in expected_tables:
                 extra_tables.append(table)
-                print(f"   ⚠️ {table} - EXTRA")
+                print(f"   - {table} - EXTRA")
                 
         # Check critical columns in chat_messages
-        print(f"\n🔍 Checking chat_messages columns:")
+        print(f"\nChecking chat_messages columns:")
         if 'chat_messages' in found_tables:
             cursor.execute("""
                 SELECT column_name, data_type 
@@ -81,16 +81,16 @@ def check_railway_schema():
             
             for col in critical_columns:
                 if col in found_columns:
-                    print(f"   ✅ {col}")
+                    print(f"   - {col}")
                 else:
-                    print(f"   ❌ {col} - MISSING")
+                    print(f"   - {col} - MISSING")
             
-            print(f"\n📝 All columns in chat_messages:")
+            print(f"\nAll columns in chat_messages:")
             for col in columns:
                 print(f"   {col[0]} ({col[1]})")
         
         # Check critical columns in agents
-        print(f"\n🔍 Checking agents columns:")
+        print(f"\nChecking agents columns:")
         if 'agents' in found_tables:
             cursor.execute("""
                 SELECT column_name, data_type 
@@ -106,28 +106,28 @@ def check_railway_schema():
             
             for col in critical_columns:
                 if col in found_columns:
-                    print(f"   ✅ {col}")
+                    print(f"   - {col}")
                 else:
-                    print(f"   ❌ {col} - MISSING")
+                    print(f"   - {col} - MISSING")
         
         # Test a simple query
-        print(f"\n🧪 Testing basic queries:")
+        print(f"\nTesting basic queries:")
         try:
             cursor.execute("SELECT COUNT(*) FROM agents")
             agent_count = cursor.fetchone()[0]
-            print(f"   ✅ Agents table accessible: {agent_count} records")
+            print(f"   - Agents table accessible: {agent_count} records")
         except Exception as e:
-            print(f"   ❌ Agents query failed: {e}")
+            print(f"   - Agents query failed: {e}")
             
         try:
             cursor.execute("SELECT COUNT(*) FROM chat_messages")  
             message_count = cursor.fetchone()[0]
-            print(f"   ✅ Chat messages table accessible: {message_count} records")
+            print(f"   - Chat messages table accessible: {message_count} records")
         except Exception as e:
-            print(f"   ❌ Chat messages query failed: {e}")
+            print(f"   - Chat messages query failed: {e}")
         
         # Test relationship query (this is likely what's failing)
-        print(f"\n🔄 Testing relationship queries:")
+        print(f"\nTesting relationship queries:")
         try:
             cursor.execute("""
                 SELECT a.id, a.name, cm.role, cm.content 
@@ -137,30 +137,30 @@ def check_railway_schema():
                 LIMIT 1
             """)
             result = cursor.fetchone()
-            print(f"   ✅ Relationship query works: {result}")
+            print(f"   - Relationship query works: {result}")
         except Exception as e:
-            print(f"   ❌ Relationship query failed: {e}")
-            print(f"   🚨 THIS IS LIKELY THE CAUSE!")
+            print(f"   - Relationship query failed: {e}")
+            print(f"   - THIS IS LIKELY THE CAUSE!")
         
         cursor.close()
         conn.close()
         
-        print(f"\n📊 SUMMARY:")
-        print(f"   ✅ Connection: Working")
-        print(f"   ✅ Tables: {len(found_tables)}/{len(expected_tables)} expected")
-        print(f"   ❌ Missing tables: {missing_tables}")
-        print(f"   ⚠️ Extra tables: {extra_tables}")
+        print(f"\nSUMMARY:")
+        print(f"   - Connection: Working")
+        print(f"   - Tables: {len(found_tables)}/{len(expected_tables)} expected")
+        print(f"   - Missing tables: {missing_tables}")
+        print(f"   - Extra tables: {extra_tables}")
         
         if missing_tables:
-            print(f"\n🎯 NEXT STEP: Run migrations to create missing tables")
+            print(f"\nNEXT STEP: Run migrations to create missing tables")
             return False
         else:
-            print(f"\n✅ All expected tables present!")
+            print(f"\nAll expected tables present!")
             return True
             
     except Exception as e:
-        print(f"❌ Connection failed: {e}")
-        print(f"🚨 DATABASE CONNECTION IS THE PROBLEM!")
+        print(f"Connection failed: {e}")
+        print(f"DATABASE CONNECTION IS THE PROBLEM!")
         return False
 
 if __name__ == "__main__":
