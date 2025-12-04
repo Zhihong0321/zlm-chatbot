@@ -20,10 +20,17 @@ def send_message(
     db: Session = Depends(get_db)
 ):
     try:
-        # Verify session exists
-        db_session = get_chat_session(db, session_id=session_id)
+        # Explicitly query session and agent separately to avoid lazy loading issues
+        from app.models.models import ChatSession, Agent
+        
+        db_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
         if db_session is None:
             raise HTTPException(status_code=404, detail="Session not found")
+            
+        # Get agent explicitly
+        agent = db.query(Agent).filter(Agent.id == db_session.agent_id).first()
+        if not agent:
+             raise HTTPException(status_code=404, detail="Agent for session not found")
         
         message = request.message
         
@@ -35,8 +42,7 @@ def send_message(
         )
         db_message = create_chat_message(db=db, message=user_message)
         
-        # Get agent info and knowledge context  
-        agent = db_session.agent
+        # Get knowledge context  
         knowledge_files = get_session_knowledge(db, session_id=session_id)
         
         # Build context

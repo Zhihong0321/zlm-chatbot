@@ -30,56 +30,77 @@ def read_sessions(
     db: Session = Depends(get_db)
 ):
     try:
-        if agent_id:
-            # When filtering by agent, we can be more specific
-            sessions = db.query(ChatSession).filter(ChatSession.agent_id == agent_id).offset(skip).limit(limit).all()
-        else:
-            # Use the simpler query from CRUD that avoids complex joins
-            sessions = get_chat_sessions(db, skip=skip, limit=limit)
+        # SIMPLE, EFFECTIVE, WORKING CODE: Raw SQL to bypass ORM complexity
+        from sqlalchemy import text
         
-        # Convert to Pydantic models explicitly to avoid lazy loading issues during validation
-        # This detaches the objects from the session and prevents DB access during serialization
-        result = []
-        for session in sessions:
-            try:
-                # Manually fetch the agent to ensure it's loaded (or use None if missing)
-                # We do this explicitly to control the query
-                # Use a fresh query to get the agent, independent of the session object
-                from app.models.models import Agent
-                agent = db.query(Agent).filter(Agent.id == session.agent_id).first()
-                
-                # Get last assistant message
-                last_messages = db.query(ChatMessage).filter(
-                    ChatMessage.session_id == session.id,
-                    ChatMessage.role == 'assistant'
-                ).order_by(ChatMessage.created_at.desc()).limit(1).first()
-                last_response = last_messages.content[:100] if last_messages else None
-
-                # Construct the schema manually
-                session_data = ChatSessionSchema(
-                    id=session.id,
-                    title=session.title,
-                    agent_id=session.agent_id,
-                    message_count=session.message_count,
-                    is_archived=session.is_archived,
-                    created_at=session.created_at,
-                    updated_at=session.updated_at,
-                    agent=agent, # Pass the loaded agent object
-                    last_ai_response=last_response
-                )
-                result.append(session_data)
-            except Exception as inner_e:
-                # If a single session fails, log it and skip or continue with partial data
-                import logging
-                logging.getLogger(__name__).error(f"Error processing session {session.id}: {str(inner_e)}")
-                continue
-                
-        return result
+        # Base query
+        sql_query = """
+            SELECT 
+                s.id, s.title, s.agent_id, s.message_count, s.is_archived, s.created_at, s.updated_at,
+                a.id as agent_id_val, a.name as agent_name, a.description as agent_description, 
+                a.system_prompt, a.model, a.temperature, a.is_active, a.created_at as agent_created_at
+            FROM chat_sessions s
+            JOIN agents a ON s.agent_id = a.id
+            WHERE s.is_archived = false
+        """
+        
+        params = {"limit": limit, "skip": skip}
+        
+        # Add filters
+        if agent_id:
+            sql_query += " AND s.agent_id = :agent_id"
+            params["agent_id"] = agent_id
+            
+        sql_query += " ORDER BY s.updated_at DESC LIMIT :limit OFFSET :skip"
+        
+        # Execute query
+        result = db.execute(text(sql_query), params).mappings().all()
+        
+        sessions_list = []
+        for row in result:
+            # Manually fetch last message for this session (simple separate query)
+            # This is safe because we are outside any complex ORM context
+            last_msg_sql = """
+                SELECT content FROM chat_messages 
+                WHERE session_id = :sid AND role = 'assistant' 
+                ORDER BY created_at DESC LIMIT 1
+            """
+            last_msg = db.execute(text(last_msg_sql), {"sid": row["id"]}).scalar()
+            
+            # Construct Agent object
+            agent_data = {
+                "id": row["agent_id_val"],
+                "name": row["agent_name"],
+                "description": row["agent_description"],
+                "system_prompt": row["system_prompt"],
+                "model": row["model"],
+                "temperature": row["temperature"],
+                "is_active": row["is_active"],
+                "created_at": row["agent_created_at"],
+                "updated_at": None
+            }
+            
+            # Construct Session object
+            session_data = {
+                "id": row["id"],
+                "title": row["title"],
+                "agent_id": row["agent_id"],
+                "message_count": row["message_count"],
+                "is_archived": row["is_archived"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "agent": agent_data,
+                "last_ai_response": last_msg[:100] if last_msg else None
+            }
+            sessions_list.append(session_data)
+            
+        return sessions_list
+        
     except Exception as e:
         db.rollback()
-        # Log the actual error for debugging
         import logging
-        logging.getLogger(__name__).error(f"Error in read_sessions: {str(e)}")
+        logging.getLogger(__name__).error(f"CRITICAL DB ERROR: {str(e)}")
+        # Return empty list on error to prevent frontend crash, or raise 500 if strictly needed
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
