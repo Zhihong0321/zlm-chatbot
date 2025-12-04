@@ -12,7 +12,7 @@ const AppProviderWithToastContext = React.createContext<{
   showToast: () => {},
 });
 
-const useAppToast = () => React.useContext(AppProviderWithToastContext);
+export const useAppToast = () => React.useContext(AppProviderWithToastContext);
 
 const AppProviderWithToast = ({ children }: AppProviderWithToastProps) => {
   const [toasts, setToasts] = React.useState<Array<{
@@ -57,4 +57,3 @@ const AppProviderWithToast = ({ children }: AppProviderWithToastProps) => {
 };
 
 export default AppProviderWithToast;
-export { useAppToast };
