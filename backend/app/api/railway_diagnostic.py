@@ -129,31 +129,48 @@ def fix_schema_brute_force():
         
         # 0. Create mcp_servers table FIRST (this is the missing table!)
         try:
+            # Try simplified table creation first
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS mcp_servers (
                     id VARCHAR(255) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
-                    description TEXT DEFAULT '',
-                    command VARCHAR(500) NOT NULL,
-                    arguments JSONB DEFAULT '[]',
-                    environment JSONB DEFAULT '{}',
-                    working_directory VARCHAR(1000) DEFAULT '',
-                    enabled BOOLEAN DEFAULT TRUE,
-                    auto_start BOOLEAN DEFAULT TRUE,
-                    health_check_interval INTEGER DEFAULT 30,
-                    status VARCHAR(20) DEFAULT 'stopped',
+                    description TEXT,
+                    command VARCHAR(500),
+                    enabled BOOLEAN,
+                    auto_start BOOLEAN,
+                    status VARCHAR(20),
                     process_id INTEGER,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
             """)
+            
+            # Add additional columns separately if needed
+            try:
+                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS arguments JSONB DEFAULT '[]';")
+            except:
+                pass
+            try:
+                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS environment JSONB DEFAULT '{}';")
+            except:
+                pass
+            try:
+                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS working_directory VARCHAR(1000) DEFAULT '';")
+            except:
+                pass
+            try:
+                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS health_check_interval INTEGER DEFAULT 30;")
+            except:
+                pass
+            
+            # Create indexes
             cursor.execute("CREATE INDEX IF NOT EXISTS ix_mcp_servers_enabled ON mcp_servers(enabled);")
             cursor.execute("CREATE INDEX IF NOT EXISTS ix_mcp_servers_status ON mcp_servers(status);")
             
             # Insert test MCP server
             cursor.execute("""
-                INSERT INTO mcp_servers (id, name, description, command, arguments, environment, working_directory, enabled, auto_start, health_check_interval, status)
-                VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', '["hello"]', '{}', '/app', TRUE, FALSE, 30, 'stopped')
+                INSERT INTO mcp_servers (id, name, description, command, enabled, auto_start, status)
+                VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', FALSE, 'stopped')
                 ON CONFLICT (id) DO UPDATE SET 
                     name = EXCLUDED.name,
                     description = EXCLUDED.description,
