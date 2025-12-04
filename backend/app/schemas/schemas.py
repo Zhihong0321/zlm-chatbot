@@ -49,6 +49,7 @@ class ChatSession(ChatSessionBase):
     created_at: datetime
     updated_at: Optional[datetime]
     agent: Agent
+    last_ai_response: Optional[str] = None
     
     class Config:
         from_attributes = True

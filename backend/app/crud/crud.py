@@ -60,7 +60,7 @@ def get_chat_session(db: Session, session_id: int) -> Optional[ChatSession]:
 
 
 def get_chat_sessions(db: Session, skip: int = 0, limit: int = 100, include_archived: bool = False) -> List[ChatSession]:
-    query = db.query(ChatSession)
+    query = db.query(ChatSession).options(joinedload(ChatSession.agent))
     if not include_archived:
         query = query.filter(ChatSession.is_archived == False)
     return query.order_by(desc(ChatSession.updated_at)).offset(skip).limit(limit).all()
