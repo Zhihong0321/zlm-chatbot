@@ -42,9 +42,18 @@ def delete_agent(db: Session, agent_id: int) -> bool:
         return False
     
     db.delete(db_agent)
-    db.commit()
+    safe_commit(db)
     return True
 
+
+def safe_commit(db: Session):
+    """Safely commit database operations"""
+    try:
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        raise e
 
 def get_chat_session(db: Session, session_id: int) -> Optional[ChatSession]:
     return db.query(ChatSession).options(joinedload(ChatSession.agent)).filter(ChatSession.id == session_id).first()
@@ -58,11 +67,14 @@ def get_chat_sessions(db: Session, skip: int = 0, limit: int = 100, include_arch
 
 
 def create_chat_session(db: Session, session: ChatSessionCreate) -> ChatSession:
-    db_session = ChatSession(**session.dict())
-    db.add(db_session)
-    db.commit()
-    db.refresh(db_session)
-    return db_session
+    try:
+        db_session = ChatSession(**session.dict())
+        db.add(db_session)
+        safe_commit(db)
+        db.refresh(db_session)
+        return db_session
+    except Exception as e:
+        raise e
 
 
 def delete_chat_session(db: Session, session_id: int) -> bool:
@@ -123,18 +135,21 @@ def get_session_analytics(db: Session, session_id: int) -> Optional[dict]:
 
 
 def create_chat_message(db: Session, message: ChatMessageCreate) -> ChatMessage:
-    db_message = ChatMessage(**message.dict())
-    db.add(db_message)
-    
-    # Update session message count and updated_at (don't commit here - let caller handle it)
-    session = db.query(ChatSession).filter(ChatSession.id == message.session_id).first()
-    if session:
-        session.message_count += 1
-    
-    db.commit()  # Single commit for both operations
-    db.refresh(db_message)
-    
-    return db_message
+    try:
+        db_message = ChatMessage(**message.dict())
+        db.add(db_message)
+        
+        # Update session message count and updated_at
+        session = db.query(ChatSession).filter(ChatSession.id == message.session_id).first()
+        if session:
+            session.message_count += 1
+        
+        db.commit()
+        db.refresh(db_message)
+        return db_message
+    except Exception as e:
+        db.rollback()
+        raise e
 
 
 def get_chat_messages(db: Session, session_id: int, skip: int = 0, limit: int = 1000) -> List[ChatMessage]:

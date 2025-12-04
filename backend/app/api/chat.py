@@ -35,7 +35,7 @@ def send_message(
         )
         db_message = create_chat_message(db=db, message=user_message)
         
-        # Get agent info and knowledge context
+        # Get agent info and knowledge context  
         agent = db_session.agent
         knowledge_files = get_session_knowledge(db, session_id=session_id)
         
@@ -70,25 +70,14 @@ def send_message(
         return db_assistant_message
         
     except Exception as e:
-        # Check if this is a database transaction error
         if "InFailedSqlTransaction" in str(e) or "current transaction is aborted" in str(e):
-            # Roll back the transaction and try to provide a more helpful message
             db.rollback()
             raise HTTPException(
                 status_code=500, 
                 detail="Database transaction error. The system encountered an issue and will recover shortly."
             )
-        elif "AI service error" in str(e):
-            raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
         else:
             raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
-    finally:
-        # Ensure we close any transaction issues
-        try:
-            if db.in_transaction():
-                db.rollback()
-        except:
-            pass
 
 
 @router.post("/{session_id}/upload")
