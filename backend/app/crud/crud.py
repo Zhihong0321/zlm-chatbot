@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
+from sqlalchemy.orm import joinedload
 from typing import List, Optional
 from app.models.models import Agent, ChatSession, ChatMessage, SessionKnowledge, AgentKnowledgeFile
 from app.schemas.schemas import AgentCreate, AgentUpdate, ChatSessionCreate, ChatMessageCreate, SessionKnowledgeCreate, AgentKnowledgeFileCreate
@@ -46,7 +47,7 @@ def delete_agent(db: Session, agent_id: int) -> bool:
 
 
 def get_chat_session(db: Session, session_id: int) -> Optional[ChatSession]:
-    return db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    return db.query(ChatSession).options(joinedload(ChatSession.agent)).filter(ChatSession.id == session_id).first()
 
 
 def get_chat_sessions(db: Session, skip: int = 0, limit: int = 100, include_archived: bool = False) -> List[ChatSession]:

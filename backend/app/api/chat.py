@@ -8,6 +8,8 @@ from app.core.zai_client import chat_with_zai
 from typing import Dict, Any
 import json
 
+from fastapi import HTTPException
+
 router = APIRouter()
 
 
@@ -17,23 +19,24 @@ def send_message(
     request: MessageRequest,
     db: Session = Depends(get_db)
 ):
-    # Verify session exists
-    db_session = get_chat_session(db, session_id=session_id)
-    if db_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    message = request.message
-    
-    # Create user message
-    user_message = ChatMessageCreate(
-        session_id=session_id,
-        role="user",
-        content=message
-    )
-    db_message = create_chat_message(db=db, message=user_message)
-    
-    # Get agent info and knowledge context
-    agent = db_session.agent
+    try:
+        # Verify session exists
+        db_session = get_chat_session(db, session_id=session_id)
+        if db_session is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        message = request.message
+        
+        # Create user message
+        user_message = ChatMessageCreate(
+            session_id=session_id,
+            role="user",
+            content=message
+        )
+        db_message = create_chat_message(db=db, message=user_message)
+        
+        # Get agent info and knowledge context
+        agent = db_session.agent
     knowledge_files = get_session_knowledge(db, session_id=session_id)
     
     # Build context
@@ -67,7 +70,25 @@ def send_message(
         return db_assistant_message
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        # Check if this is a database transaction error
+        if "InFailedSqlTransaction" in str(e) or "current transaction is aborted" in str(e):
+            # Roll back the transaction and try to provide a more helpful message
+            db.rollback()
+            raise HTTPException(
+                status_code=500, 
+                detail="Database transaction error. The system encountered an issue and will recover shortly."
+            )
+        elif "AI service error" in str(e):
+            raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
+    finally:
+        # Ensure we close any transaction issues
+        try:
+            if db.in_transaction():
+                db.rollback()
+        except:
+            pass
 
 
 @router.post("/{session_id}/upload")
