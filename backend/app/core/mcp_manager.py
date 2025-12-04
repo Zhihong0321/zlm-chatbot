@@ -65,22 +65,25 @@ class MCPServerManager:
             
             servers_info = []
             for row in result:
-                # Convert row to dict manually
-                if hasattr(row, '_fields'):
-                    server_data = {field: getattr(row, field) for field in row._fields}
-                else:
-                    # Fallback for different row types
+                # Simple dict conversion - this should work with SQLAlchemy RowProxy
+                try:
+                    server_data = dict(row)
+                except:
+                    # Fallback for tuple rows
                     server_data = {
                         'id': row[0], 'name': row[1], 'description': row[2], 
                         'command': row[3], 'enabled': row[4], 'auto_start': row[5],
-                        'health_check_interval': row[6], 'status': row[7], 
-                        'process_id': row[8], 'created_at': row[9], 'updated_at': row[10]
+                        'status': row[6]
                     }
                 
-                # Set default JSON values
+                # Add default JSON values
                 server_data['arguments'] = []
                 server_data['environment'] = {}
                 server_data['working_directory'] = ''
+                server_data['health_check_interval'] = 30
+                server_data['process_id'] = None
+                server_data['created_at'] = None
+                server_data['updated_at'] = None
                 
                 # Override status from local cache if process is managed by this instance
                 sid = server_data['id']
