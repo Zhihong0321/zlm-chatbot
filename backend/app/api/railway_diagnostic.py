@@ -112,19 +112,44 @@ def run_migrations_only():
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
-@router.post("/quick-check")
-def quick_connectivity_check():
-    """Just check if database connects"""
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        return {"status": "error", "message": "DATABASE_URL not set"}
-    
+@router.post("/fix-schema-brute-force")
+def fix_schema_brute_force():
+    """Force create columns via raw SQL"""
     try:
+        db_url = os.getenv("DATABASE_URL")
+        if not db_url:
+            return {"status": "error", "message": "DATABASE_URL not set"}
+            
+        import psycopg2
         conn = psycopg2.connect(db_url)
+        conn.autocommit = True
         cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        cursor.close()
+        
+        results = []
+        
+        # 1. Add mcp_servers to agents
+        try:
+            cursor.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS mcp_servers JSON;")
+            results.append("Added mcp_servers to agents")
+        except Exception as e:
+            results.append(f"Failed agents: {e}")
+
+        # 2. Add tools_used to chat_messages
+        try:
+            cursor.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS tools_used JSON;")
+            results.append("Added tools_used to chat_messages")
+        except Exception as e:
+            results.append(f"Failed tools_used: {e}")
+
+        # 3. Add mcp_server_responses to chat_messages
+        try:
+            cursor.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mcp_server_responses JSON;")
+            results.append("Added mcp_server_responses to chat_messages")
+        except Exception as e:
+            results.append(f"Failed mcp_server_responses: {e}")
+            
         conn.close()
-        return {"status": "success", "message": "Connectivity OK", "database_url": db_url[:50] + "..."}
+        return {"status": "success", "results": results}
+        
     except Exception as e:
-        return {"status": "error", "message": f"Connection failed: {e}"}
+        return {"status": "error", "error": str(e)}
