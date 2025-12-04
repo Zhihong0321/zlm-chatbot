@@ -37,20 +37,44 @@ def read_sessions(
             # Use the simpler query from CRUD that avoids complex joins
             sessions = get_chat_sessions(db, skip=skip, limit=limit)
         
-        # Add last AI response to session data for frontend display
+        # Convert to Pydantic models explicitly to avoid lazy loading issues during validation
+        # This detaches the objects from the session and prevents DB access during serialization
+        result = []
         for session in sessions:
             try:
-                # Get last assistant message as session title fallback
+                # Manually fetch the agent to ensure it's loaded (or use None if missing)
+                # We do this explicitly to control the query
+                # Use a fresh query to get the agent, independent of the session object
+                from app.models.models import Agent
+                agent = db.query(Agent).filter(Agent.id == session.agent_id).first()
+                
+                # Get last assistant message
                 last_messages = db.query(ChatMessage).filter(
                     ChatMessage.session_id == session.id,
                     ChatMessage.role == 'assistant'
                 ).order_by(ChatMessage.created_at.desc()).limit(1).first()
+                last_response = last_messages.content[:100] if last_messages else None
+
+                # Construct the schema manually
+                session_data = ChatSessionSchema(
+                    id=session.id,
+                    title=session.title,
+                    agent_id=session.agent_id,
+                    message_count=session.message_count,
+                    is_archived=session.is_archived,
+                    created_at=session.created_at,
+                    updated_at=session.updated_at,
+                    agent=agent, # Pass the loaded agent object
+                    last_ai_response=last_response
+                )
+                result.append(session_data)
+            except Exception as inner_e:
+                # If a single session fails, log it and skip or continue with partial data
+                import logging
+                logging.getLogger(__name__).error(f"Error processing session {session.id}: {str(inner_e)}")
+                continue
                 
-                session.last_ai_response = last_messages.content[:100] if last_messages else None
-            except Exception:
-                session.last_ai_response = None
-                
-        return sessions
+        return result
     except Exception as e:
         db.rollback()
         # Log the actual error for debugging
