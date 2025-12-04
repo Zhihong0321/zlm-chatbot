@@ -36,7 +36,7 @@ ENV PORT=8000
 CMD sh -c "cd backend && echo 'Starting MCP database setup...' && \
     echo 'DATABASE_URL: $DATABASE_URL' && \
     echo 'Running Alembic migrations...' && \
-    alembic upgrade head --verbose && \
+    alembic upgrade head && \
     echo 'Migration completed, checking MCP schema...' && \
     cd .. && echo 'Starting application...' && \
     python app.py"
