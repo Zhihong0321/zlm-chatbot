@@ -127,6 +127,43 @@ def fix_schema_brute_force():
         
         results = []
         
+        # 0. Create mcp_servers table FIRST (this is the missing table!)
+        try:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS mcp_servers (
+                    id VARCHAR(255) PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT DEFAULT '',
+                    command VARCHAR(500) NOT NULL,
+                    arguments JSONB DEFAULT '[]',
+                    environment JSONB DEFAULT '{}',
+                    working_directory VARCHAR(1000) DEFAULT '',
+                    enabled BOOLEAN DEFAULT TRUE,
+                    auto_start BOOLEAN DEFAULT TRUE,
+                    health_check_interval INTEGER DEFAULT 30,
+                    status VARCHAR(20) DEFAULT 'stopped',
+                    process_id INTEGER,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS ix_mcp_servers_enabled ON mcp_servers(enabled);")
+            cursor.execute("CREATE INDEX IF NOT EXISTS ix_mcp_servers_status ON mcp_servers(status);")
+            
+            # Insert test MCP server
+            cursor.execute("""
+                INSERT INTO mcp_servers (id, name, description, command, arguments, environment, working_directory, enabled, auto_start, health_check_interval, status)
+                VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', '["hello"]', '{}', '/app', TRUE, FALSE, 30, 'stopped')
+                ON CONFLICT (id) DO UPDATE SET 
+                    name = EXCLUDED.name,
+                    description = EXCLUDED.description,
+                    updated_at = CURRENT_TIMESTAMP;
+            """)
+            
+            results.append("Created mcp_servers table with test server")
+        except Exception as e:
+            results.append(f"Failed mcp_servers table: {e}")
+        
         # 1. Add mcp_servers to agents
         try:
             cursor.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS mcp_servers JSON;")
@@ -147,6 +184,14 @@ def fix_schema_brute_force():
             results.append("Added mcp_server_responses to chat_messages")
         except Exception as e:
             results.append(f"Failed mcp_server_responses: {e}")
+        
+        # Verify mcp_servers table creation
+        try:
+            cursor.execute("SELECT COUNT(*) FROM mcp_servers")
+            server_count = cursor.fetchone()[0]
+            results.append(f"Verification: {server_count} servers in mcp_servers table")
+        except Exception as e:
+            results.append(f"Verification failed: {e}")
             
         conn.close()
         return {"status": "success", "results": results}
