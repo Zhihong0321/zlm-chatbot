@@ -70,14 +70,8 @@ def send_message(
         return db_assistant_message
         
     except Exception as e:
-        if "InFailedSqlTransaction" in str(e) or "current transaction is aborted" in str(e):
-            db.rollback()
-            raise HTTPException(
-                status_code=500, 
-                detail="Database transaction error. The system encountered an issue and will recover shortly."
-            )
-        else:
-            raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
 
 
 @router.post("/{session_id}/upload")

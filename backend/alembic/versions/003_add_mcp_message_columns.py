@@ -1,4 +1,8 @@
-"""Add missing MCP columns to chat_messages
+"""Redundant migration - columns already added in 002_add_mcp_schema
+
+This migration is now deprecated as the MCP columns were properly added 
+in the 002_add_mcp_schema migration. This file exists for migration
+history compatibility but performs no operations.
 
 Revision ID: 003_add_mcp_message_columns
 Revises: fix_metadata_rename
@@ -16,30 +20,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add missing MCP columns to chat_messages table
-    
-    # Add tools_used column if it doesn't exist
-    try:
-        op.add_column('chat_messages', sa.Column('tools_used', sa.JSON(), nullable=True, comment='List of MCP tools used in this message'))
-        print("Added tools_used column to chat_messages")
-    except sa.exc.ProgrammingError as e:
-        if "already exists" in str(e):
-            print("tools_used column already exists in chat_messages")
-        else:
-            raise
-    
-    # Add mcp_server_responses column if it doesn't exist
-    try:
-        op.add_column('chat_messages', sa.Column('mcp_server_responses', sa.JSON(), nullable=True, comment='MCP server responses associated with this message'))
-        print("Added mcp_server_responses column to chat_messages")
-    except sa.exc.ProgrammingError as e:
-        if "already exists" in str(e):
-            print("mcp_server_responses column already exists in chat_messages")
-        else:
-            raise
+    # NO OP - MCP columns were already added in 002_add_mcp_schema
+    # This migration is kept for history but performs no operations
+    pass
 
 
 def downgrade() -> None:
-    # Remove the MCP columns (optional)
-    op.drop_column('chat_messages', 'tools_used')
-    op.drop_column('chat_messages', 'mcp_server_responses')
+    # NO OP - MCP columns are managed by 002_add_mcp_schema
+    pass

@@ -64,7 +64,6 @@ class ChatMessage(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
     
     session = relationship("ChatSession", back_populates="messages")
-    mcp_tool_usage = relationship("MCPToolUsage", back_populates="message", cascade="all, delete-orphan")
 
 
 class SessionKnowledge(Base):
@@ -169,7 +168,6 @@ class MCPToolUsage(Base):
     
     server = relationship("MCPServer", back_populates="tool_usage")
     session = relationship("ChatSession")
-    message = relationship("ChatMessage", back_populates="mcp_tool_usage")
 
 
 class MCPSystemMetrics(Base):
