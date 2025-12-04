@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from backend.app.db.database import get_db
 import os
 import psycopg2
+import subprocess
+import sys
 
 router = APIRouter(prefix="/diagnostic", tags=["diagnostic"])
 
@@ -78,3 +80,51 @@ def check_railway_schema(db: Session = Depends(get_db)):
         
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+@router.post("/setup-database")
+def setup_database_manually():
+    """Manual database setup endpoint - avoid slow Docker startup"""
+    try:
+        # Import and run the manual setup
+        sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+        from manual_db_setup import full_database_setup
+        
+        result = full_database_setup()
+        return result
+        
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@router.post("/run-migrations")
+def run_migrations_only():
+    """Just run migrations"""
+    try:
+        # Import and run just migrations
+        sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+        from manual_db_setup import run_migrations_safely
+        
+        success = run_migrations_safely()
+        if success:
+            return {"status": "success", "message": "Migrations completed"}
+        else:
+            return {"status": "failed", "message": "Migrations failed"}
+            
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@router.post("/quick-check")
+def quick_connectivity_check():
+    """Just check if database connects"""
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        return {"status": "error", "message": "DATABASE_URL not set"}
+    
+    try:
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
+        conn.close()
+        return {"status": "success", "message": "Connectivity OK", "database_url": db_url[:50] + "..."}
+    except Exception as e:
+        return {"status": "error", "message": f"Connection failed: {e}"}

@@ -32,11 +32,6 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 ENV PYTHONPATH=/app
 ENV PORT=8000
 
-# Start command - Enhanced with robust migration handling
-CMD sh -c "cd backend && echo 'Starting MCP database setup...' && \
-    echo 'DATABASE_URL: $DATABASE_URL' && \
-    echo 'Running Alembic migrations...' && \
-    alembic upgrade head && \
-    echo 'Migration completed, checking MCP schema...' && \
-    cd .. && echo 'Starting application...' && \
-    python app.py"
+# FAST STARTUP - No slow health checks in Dockerfile
+CMD sh -c "cd backend && echo 'Starting app...' && \
+    cd .. && python app.py"

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.api_v1 import api_router
+from app.api import railway_diagnostic
 from app.db.database import engine
 from app.models import models
 
@@ -25,6 +26,9 @@ app.add_middleware(
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
+
+# Mount Diagnostic Router at root (so /diagnostic/schema works)
+app.include_router(railway_diagnostic.router)
 
 
 # Mount static files properly
