@@ -191,17 +191,12 @@ export default function ChatInterface() {
                         <div className="mt-2">
                           <p className="text-xs font-medium text-gray-700">🛠️ MCP Tools ({currentAgent.mcp_servers.length}):</p>
                           <div className="mt-1 space-y-1">
-                            {currentAgent.mcp_servers.map((serverId: string) => {
-                              const server = mcpServers?.find(s => s.id === serverId);
-                              return server ? (
-                                <div key={serverId} className="flex items-center space-x-1">
-                                  <span className="text-xs text-gray-600">• {server.name}</span>
-                                  <ServerStatusBadge status={server.status} />
-                                </div>
-                              ) : (
-                                <span key={serverId} className="text-xs text-gray-500">• {serverId}</span>
-                              );
-                            })}
+                            {currentAgent.mcp_servers.map((serverId: string) => (
+                              <div key={serverId} className="flex items-center space-x-1">
+                                <span className="text-xs text-gray-600">• {serverId}</span>
+                                <span className="text-xs bg-gray-100 px-1 py-0.5 rounded text-gray-600">Server</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}

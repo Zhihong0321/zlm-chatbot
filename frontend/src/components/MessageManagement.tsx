@@ -112,7 +112,7 @@ export default function MessageManagement({
                       >
                         <span>📎</span>
                         <span>{file.filename}</span>
-                        <span>({formatFileSize(file.size)})</span>
+                        <span>({formatFileSize(file.file_size)})</span>
                       </div>
                     ))}
                   </div>
