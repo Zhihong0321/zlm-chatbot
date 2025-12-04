@@ -69,11 +69,20 @@ def send_message(
             
             return db_assistant_message
         except Exception as e:
+            # Rollback is handled by global exception handler or dependency if not done here
+            # But explicit is better for transaction errors
             db.rollback()
+            import logging
+            logging.getLogger(__name__).error(f"Chat error: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
     except HTTPException:
+        # HTTP exceptions are fine, just re-raise
         raise
     except Exception as e:
+        # Fallback for any other error in the route
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).error(f"Internal chat error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
