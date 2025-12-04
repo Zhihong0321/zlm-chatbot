@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc, or_, and_
 from typing import List, Optional, Dict, Any
 from app.db.database import get_db
@@ -29,22 +29,26 @@ def read_sessions(
     agent_id: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
-    if agent_id:
-        sessions = db.query(ChatSession).filter(ChatSession.agent_id == agent_id).offset(skip).limit(limit).all()
-    else:
-        sessions = get_chat_sessions(db, skip=skip, limit=limit)
-    
-    # Add last AI response to session data for frontend display
-    for session in sessions:
-        # Get last assistant message as session title fallback
-        last_messages = db.query(ChatMessage).filter(
-            ChatMessage.session_id == session.id,
-            ChatMessage.role == 'assistant'
-        ).order_by(ChatMessage.created_at.desc()).limit(1).first()
+    try:
+        if agent_id:
+            sessions = db.query(ChatSession).options(joinedload(ChatSession.agent)).filter(ChatSession.agent_id == agent_id).offset(skip).limit(limit).all()
+        else:
+            sessions = get_chat_sessions(db, skip=skip, limit=limit)
         
-        session.last_ai_response = last_messages.content[:100] if last_messages else None
-    
-    return sessions
+        # Add last AI response to session data for frontend display
+        for session in sessions:
+            # Get last assistant message as session title fallback
+            last_messages = db.query(ChatMessage).filter(
+                ChatMessage.session_id == session.id,
+                ChatMessage.role == 'assistant'
+            ).order_by(ChatMessage.created_at.desc()).limit(1).first()
+            
+            session.last_ai_response = last_messages.content[:100] if last_messages else None
+        
+        return sessions
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.get("/search", response_model=List[ChatSessionSchema])
