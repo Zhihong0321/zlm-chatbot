@@ -73,7 +73,7 @@ export const useMCPServers = () => {
 };
 
 export const useMCPServerActions = () => {
-  const showToast = useAppToast();
+  const notify = useAppToast();
 
   const startServer = async (serverId: string) => {
     try {
@@ -83,14 +83,14 @@ export const useMCPServerActions = () => {
       const result = await response.json();
       
       if (response.ok) {
-        showToast({ message: result.message, type: 'success' });
+        notify(result.message);
         return true;
       } else {
-        showToast({ message: result.error || 'Failed to start server', type: 'error' });
+        notify(result.error || 'Failed to start server');
         return false;
       }
     } catch (err) {
-      showToast({ message: 'Network error starting server', type: 'error' });
+      notify('Network error starting server');
       return false;
     }
   };
@@ -103,14 +103,14 @@ export const useMCPServerActions = () => {
       const result = await response.json();
       
       if (response.ok) {
-        showToast({ message: result.message, type: 'success' });
+        notify(result.message);
         return true;
       } else {
-        showToast({ message: result.error || 'Failed to stop server', type: 'error' });
+        notify(result.error || 'Failed to stop server');
         return false;
       }
     } catch (err) {
-      showToast({ message: 'Network error stopping server', type: 'error' });
+      notify('Network error stopping server');
       return false;
     }
   };
@@ -123,14 +123,14 @@ export const useMCPServerActions = () => {
       const result = await response.json();
       
       if (response.ok) {
-        showToast({ message: result.message, type: 'success' });
+        notify(result.message);
         return true;
       } else {
-        showToast({ message: result.error || 'Failed to restart server', type: 'error' });
+        notify(result.error || 'Failed to restart server');
         return false;
       }
     } catch (err) {
-      showToast({ message: 'Network error restarting server', type: 'error' });
+      notify('Network error restarting server');
       return false;
     }
   };
