@@ -61,13 +61,23 @@ class MCPServerManager:
                 SELECT id, name, description, command, enabled, auto_start, 
                        health_check_interval, status, process_id, created_at, updated_at
                 FROM mcp_servers
-            """)).mappings().all()
+            """))
             
             servers_info = []
             for row in result:
-                server_data = dict(row)
+                # Convert row to dict manually
+                if hasattr(row, '_fields'):
+                    server_data = {field: getattr(row, field) for field in row._fields}
+                else:
+                    # Fallback for different row types
+                    server_data = {
+                        'id': row[0], 'name': row[1], 'description': row[2], 
+                        'command': row[3], 'enabled': row[4], 'auto_start': row[5],
+                        'health_check_interval': row[6], 'status': row[7], 
+                        'process_id': row[8], 'created_at': row[9], 'updated_at': row[10]
+                    }
                 
-                # Set default JSON values - avoid querying JSON columns that might not exist
+                # Set default JSON values
                 server_data['arguments'] = []
                 server_data['environment'] = {}
                 server_data['working_directory'] = ''
