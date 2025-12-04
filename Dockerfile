@@ -36,6 +36,9 @@ ENV PORT=8000
 # Run schema fix if needed (only once)
 RUN python railway_schema_fix.py || echo "Schema fix completed or not needed"
 
+# Run emergency schema fix (new approach)
+RUN python emergency_schema_fix.py || echo "Emergency schema fix completed or not needed"
+
 # FAST STARTUP - No slow health checks in Dockerfile
 CMD sh -c "cd backend && echo 'Starting app...' && \
     cd .. && python app.py"
