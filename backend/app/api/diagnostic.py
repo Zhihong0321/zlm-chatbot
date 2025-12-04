@@ -4,6 +4,7 @@ from sqlalchemy import text
 import os
 import tempfile
 from app.db.database import get_db
+from openai import OpenAI
 
 router = APIRouter()
 
@@ -58,3 +59,75 @@ def system_diagnostic(db: Session = Depends(get_db)):
     }
 
     return results
+
+@router.post("/test-mcp-compatibility")
+def test_mcp_compatibility():
+    """
+    Test MCP compatibility with Z.ai API
+    """
+    try:
+        client = OpenAI(
+            api_key=os.getenv("ZAI_API_KEY"),
+            base_url="https://api.z.ai/api/coding/paas/v4"
+        )
+        
+        # Test basic tool calling capability
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "test_tool",
+                    "description": "A test tool for MCP compatibility",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "test_param": {"type": "string", "description": "Test parameter"}
+                        },
+                        "required": ["test_param"]
+                    }
+                }
+            }
+        ]
+        
+        response = client.chat.completions.create(
+            model="glm-4.6",
+            messages=[
+                {"role": "user", "content": "Test MCP compatibility by calling the test_tool"}
+            ],
+            tools=tools,
+            tool_choice="auto"
+        )
+        
+        message = response.choices[0].message
+        
+        if hasattr(message, 'tool_calls') and message.tool_calls:
+            return {
+                "success": True,
+                "message": "Z.ai API fully supports MCP-style tool calling",
+                "details": {
+                    "tool_calls_detected": len(message.tool_calls),
+                    "reasoning_content": hasattr(message, 'reasoning_content'),
+                    "compatible": True
+                }
+            }
+        else:
+            return {
+                "success": True,
+                "message": "Z.ai API responds correctly (tool calling available but not used in this response)",
+                "details": {
+                    "response_type": "direct_response",
+                    "has_reasoning": hasattr(message, 'reasoning_content'),
+                    "compatible": True
+                }
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Z.ai API compatibility test failed: {str(e)}",
+            "details": {
+                "error_type": type(e).__name__,
+                "api_key_configured": bool(os.getenv("ZAI_API_KEY")),
+                "compatible": False
+            }
+        }

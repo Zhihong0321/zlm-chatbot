@@ -1,0 +1,82 @@
+{
+  "servers": [
+    {
+      "id": "filesystem-1",
+      "name": "File System Server",
+      "description": "Local file system operations (list, read, search)",
+      "command": "python",
+      "arguments": [
+        "mcp_file_server.py"
+      ],
+      "environment": {},
+      "working_directory": "E:\\oneapi",
+      "enabled": true,
+      "auto_start": true,
+      "health_check_interval": 30,
+      "created_at": 1764814991.588592,
+      "updated_at": 1764814991.5885923,
+      "process_id": null,
+      "status": "stopped"
+    },
+    {
+      "id": "database-1",
+      "name": "Database Server",
+      "description": "Database query and management tools",
+      "command": "npx",
+      "arguments": [
+        "-y",
+        "@modelcontextprotocol/server-postgres"
+      ],
+      "environment": {
+        "DATABASE_URL": "sqlite:///chatbot.db"
+      },
+      "working_directory": "E:\\oneapi",
+      "enabled": true,
+      "auto_start": true,
+      "health_check_interval": 30,
+      "created_at": 1764814991.5885973,
+      "updated_at": 1764814991.5885978,
+      "process_id": null,
+      "status": "stopped"
+    },
+    {
+      "id": "git-1",
+      "name": "Git Server",
+      "description": "Git repository operations and file version control",
+      "command": "npx",
+      "arguments": [
+        "-y",
+        "@modelcontextprotocol/server-git"
+      ],
+      "environment": {},
+      "working_directory": "E:\\oneapi",
+      "enabled": true,
+      "auto_start": true,
+      "health_check_interval": 30,
+      "created_at": 1764814991.5886,
+      "updated_at": 1764814991.5886,
+      "process_id": null,
+      "status": "stopped"
+    },
+    {
+      "id": "web-fetch-1",
+      "name": "Web Fetch Server",
+      "description": "Web content fetching and HTTP requests",
+      "command": "npx",
+      "arguments": [
+        "-y",
+        "@modelcontextprotocol/server-fetch"
+      ],
+      "environment": {},
+      "working_directory": "E:\\oneapi",
+      "enabled": true,
+      "auto_start": true,
+      "health_check_interval": 30,
+      "created_at": 1764814991.588601,
+      "updated_at": 1764814991.5886014,
+      "process_id": null,
+      "status": "stopped"
+    }
+  ],
+  "last_updated": 1764815080.4312766
+}

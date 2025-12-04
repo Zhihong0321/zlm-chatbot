@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAgents, useSessions, useCreateSession, useSessionHistory, useSendMessage, useUploadFile, useUpdateSession } from '../hooks/useApi';
 import { Agent, Message } from '../types';
+import { useMCPServers, ServerStatusBadge } from './MCPManagement';
 
 export default function ChatInterface() {
   const { sessionId } = useParams<{ sessionId?: string }>();
   const navigate = useNavigate();
   
   const { data: agents } = useAgents();
+  const { servers: mcpServers } = useMCPServers();
   const { data: sessions } = useSessions();
   const createSessionMutation = useCreateSession();
   const sendMessageMutation = useSendMessage();
@@ -172,6 +174,12 @@ export default function ChatInterface() {
                   >
                     <span>{currentAgent.name}</span>
                     <span className="text-xs text-blue-600">({currentAgent.model})</span>
+                    {/* MCP Status Indicator */}
+                    {currentAgent.mcp_servers && currentAgent.mcp_servers.length > 0 && (
+                      <span className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded">
+                        🛠️ {currentAgent.mcp_servers.length}
+                      </span>
+                    )}
                   </button>
                   {showAgentInfo && (
                     <div className="absolute top-16 left-4 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm">
@@ -179,6 +187,27 @@ export default function ChatInterface() {
                       <p className="text-sm text-gray-600 mb-2">{currentAgent.description}</p>
                       <p className="text-xs text-gray-500">Model: {currentAgent.model}</p>
                       <p className="text-xs text-gray-500">Temperature: {currentAgent.temperature}</p>
+                      
+                      {/* MCP Tools Information */}
+                      {currentAgent.mcp_servers && currentAgent.mcp_servers.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs font-medium text-gray-700">🛠️ MCP Tools ({currentAgent.mcp_servers.length}):</p>
+                          <div className="mt-1 space-y-1">
+                            {currentAgent.mcp_servers.map((serverId: string) => {
+                              const server = mcpServers?.find(s => s.id === serverId);
+                              return server ? (
+                                <div key={serverId} className="flex items-center space-x-1">
+                                  <span className="text-xs text-gray-600">• {server.name}</span>
+                                  <ServerStatusBadge status={server.status} />
+                                </div>
+                              ) : (
+                                <span key={serverId} className="text-xs text-gray-500">• {serverId}</span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="mt-2">
                         <p className="text-xs font-medium text-gray-700">System Prompt:</p>
                         <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{currentAgent.system_prompt.slice(0, 100)}...</p>
@@ -291,6 +320,22 @@ export default function ChatInterface() {
                     <>
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                       
+                      {/* MCP Tools Used Indicator */}
+                      {msg.tools_used && msg.tools_used.length > 0 && (
+                        <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                          <div className="text-xs font-medium text-green-800 mb-1">
+                            🛠️ Tools Used ({msg.tools_used.length})
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {msg.tools_used.map((toolName: string, index: number) => (
+                              <span key={index} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                {toolName}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Message metadata and actions */}
                       <div className={`flex items-center justify-between mt-2 ${
                         msg.role === 'user' ? 'text-blue-100' : 'text-gray-500'
@@ -298,6 +343,7 @@ export default function ChatInterface() {
                         <span className="text-xs">
                           {formatTimestamp(msg.timestamp)}
                           {msg.token_usage && ` • ${msg.token_usage.total_tokens} tokens`}
+                          {msg.tools_used && msg.tools_used.length > 0 && ` • ${msg.tools_used.length} tools`}
                         </span>
                         
                         {/* Action buttons */}

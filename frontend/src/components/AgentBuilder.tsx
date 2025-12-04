@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAgents, useCreateAgent, useUpdateAgent, useDeleteAgent, useUploadAgentFile, useDeleteAgentFile, useAgentWithFiles } from '../hooks/useApi';
 import type { Agent, AgentKnowledgeFile } from '../types';
+import { useMCPServers, useMCPServerActions, ServerStatusBadge } from './MCPManagement';
 
 export default function AgentBuilder() {
   const { data: agents, isLoading, error } = useAgents();
@@ -10,12 +11,16 @@ export default function AgentBuilder() {
   const uploadFileMutation = useUploadAgentFile();
   const deleteFileMutation = useDeleteAgentFile();
   
+  // MCP Integration
+  const { servers: mcpServers } = useMCPServers();
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     model: 'glm-4.6',
     system_prompt: '',
     temperature: 0.7,
+    mcp_servers: [] as string[], // Store selected MCP server IDs
   });
 
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -30,6 +35,7 @@ export default function AgentBuilder() {
       model: 'glm-4.6',
       system_prompt: '',
       temperature: 0.7,
+      mcp_servers: [],
     });
     setEditingId(null);
     setIsFormVisible(false);
@@ -43,6 +49,7 @@ export default function AgentBuilder() {
       model: 'glm-4.6',
       system_prompt: '',
       temperature: 0.7,
+      mcp_servers: [],
     });
     setIsFormVisible(true);
   };
@@ -55,6 +62,7 @@ export default function AgentBuilder() {
       model: agent.model,
       system_prompt: agent.system_prompt,
       temperature: agent.temperature,
+      mcp_servers: agent.mcp_servers || [],
     });
     setIsFormVisible(true);
   };
@@ -305,6 +313,72 @@ export default function AgentBuilder() {
                 />
               </div>
 
+              {/* MCP Server Selection */}
+              <div>
+                <label htmlFor="mcp_servers" className="block text-sm font-medium text-gray-700 mb-1">
+                  MCP Servers (Tools Integration)
+                </label>
+                <div className="border border-gray-300 rounded-md p-3 bg-gray-50 max-h-40 overflow-y-auto">
+                  {mcpServers.length === 0 ? (
+                    <div className="text-sm text-gray-500 italic">
+                      No MCP servers available. Configure servers in MCP Management.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {mcpServers.map((server) => (
+                        <div key={server.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`mcp-server-${server.id}`}
+                            value={server.id}
+                            checked={formData.mcp_servers.includes(server.id)}
+                            onChange={(e) => {
+                              const serverId = e.target.value;
+                              if (e.target.checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  mcp_servers: [...prev.mcp_servers, serverId]
+                                }));
+                              } else {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  mcp_servers: prev.mcp_servers.filter(id => id !== serverId)
+                                }));
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <label
+                            htmlFor={`mcp-server-${server.id}`}
+                            className="flex items-center space-x-2 cursor-pointer text-sm flex-1"
+                          >
+                            <span>{server.name}</span>
+                            <ServerStatusBadge status={server.status} />
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {formData.mcp_servers.length > 0 && (
+                  <div className="mt-2 text-xs text-blue-600">
+                    Selected {formData.mcp_servers.length} server(s) will provide tools to this agent
+                  </div>
+                )}
+                <div className="mt-2 text-xs text-gray-500">
+                  <a
+                    href="#mcp管理"
+                    className="text-blue-600 hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.open('/mcp管理', '_blank');
+                    }}
+                  >
+                    Configure MCP Servers →
+                  </a>
+                </div>
+              </div>
+
               <div>
                 <label htmlFor="temperature" className="block text-sm font-medium text-gray-700 mb-1">
                   Temperature: {formData.temperature}
@@ -357,6 +431,30 @@ export default function AgentBuilder() {
                   <span className="bg-gray-100 px-2 py-1 rounded">{agent.model}</span>
                   <span className="bg-gray-100 px-2 py-1 rounded">Temp: {agent.temperature}</span>
                 </div>
+                
+                {/* MCP Servers Display */}
+                {agent.mcp_servers && agent.mcp_servers.length > 0 && (
+                  <div className="mb-4">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      🛠️ MCP Tools ({agent.mcp_servers.length})
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {agent.mcp_servers.map((serverId: string) => {
+                        const server = mcpServers.find(s => s.id === serverId);
+                        return server ? (
+                          <div key={serverId} className="flex items-center space-x-1 bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                            <span>{server.name}</span>
+                            <ServerStatusBadge status={server.status} />
+                          </div>
+                        ) : (
+                          <span key={serverId} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                            {serverId}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 
                 {/* File Management Section */}
                 <button
