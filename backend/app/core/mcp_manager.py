@@ -56,23 +56,10 @@ class MCPServerManager:
         """List all MCP servers with their status"""
         db = self._get_db()
         try:
-            # Check what columns exist first
-            columns_result = db.execute(text("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'mcp_servers' ORDER BY ordinal_position
-            """)).fetchall()
-            available_columns = [row[0] for row in columns_result]
-            
-            # Build dynamic query based on available columns
-            required_columns = ['id', 'name', 'description', 'command', 'arguments', 'environment', 
-                              'working_directory', 'enabled', 'auto_start', 'health_check_interval',
-                              'status', 'process_id', 'created_at', 'updated_at']
-            
-            # Use only columns that exist
-            query_columns = [col for col in required_columns if col in available_columns]
-            
-            result = db.execute(text(f"""
-                SELECT {', '.join(query_columns)}
+            # Simple fixed query with basic columns that always exist
+            result = db.execute(text("""
+                SELECT id, name, description, command, enabled, auto_start, 
+                       health_check_interval, status, process_id, created_at, updated_at
                 FROM mcp_servers
             """)).mappings().all()
             
@@ -80,14 +67,26 @@ class MCPServerManager:
             for row in result:
                 server_data = dict(row)
                 
-                # JSON deserialize complex fields
-                if isinstance(server_data.get('arguments'), str):
-                    try: server_data['arguments'] = json.loads(server_data['arguments']) 
-                    except: server_data['arguments'] = []
-                
-                if isinstance(server_data.get('environment'), str):
-                    try: server_data['environment'] = json.loads(server_data['environment'])
-                    except: server_data['environment'] = {}
+                # Try to get JSON columns if they exist
+                try:
+                    json_result = db.execute(text("""
+                        SELECT arguments, environment, working_directory
+                        FROM mcp_servers WHERE id = :id
+                    """), {"id": server_data['id']}).first()
+                    
+                    if json_result:
+                        server_data['arguments'] = json.loads(json_result[0] or '[]')
+                        server_data['environment'] = json.loads(json_result[1] or '{}')
+                        server_data['working_directory'] = json_result[2] or ''
+                    else:
+                        server_data['arguments'] = []
+                        server_data['environment'] = {}
+                        server_data['working_directory'] = ''
+                except:
+                    # Fallback values if JSON columns don't exist
+                    server_data['arguments'] = []
+                    server_data['environment'] = {}
+                    server_data['working_directory'] = ''
                 
                 # Override status from local cache if process is managed by this instance
                 sid = server_data['id']
