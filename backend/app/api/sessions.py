@@ -48,6 +48,9 @@ def read_sessions(
         return sessions
     except Exception as e:
         db.rollback()
+        # Log the actual error for debugging
+        import logging
+        logging.getLogger(__name__).error(f"Error in read_sessions: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
