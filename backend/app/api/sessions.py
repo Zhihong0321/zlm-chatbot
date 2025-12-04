@@ -31,20 +31,25 @@ def read_sessions(
 ):
     try:
         if agent_id:
-            sessions = db.query(ChatSession).options(joinedload(ChatSession.agent)).filter(ChatSession.agent_id == agent_id).offset(skip).limit(limit).all()
+            # When filtering by agent, we can be more specific
+            sessions = db.query(ChatSession).filter(ChatSession.agent_id == agent_id).offset(skip).limit(limit).all()
         else:
+            # Use the simpler query from CRUD that avoids complex joins
             sessions = get_chat_sessions(db, skip=skip, limit=limit)
         
         # Add last AI response to session data for frontend display
         for session in sessions:
-            # Get last assistant message as session title fallback
-            last_messages = db.query(ChatMessage).filter(
-                ChatMessage.session_id == session.id,
-                ChatMessage.role == 'assistant'
-            ).order_by(ChatMessage.created_at.desc()).limit(1).first()
-            
-            session.last_ai_response = last_messages.content[:100] if last_messages else None
-        
+            try:
+                # Get last assistant message as session title fallback
+                last_messages = db.query(ChatMessage).filter(
+                    ChatMessage.session_id == session.id,
+                    ChatMessage.role == 'assistant'
+                ).order_by(ChatMessage.created_at.desc()).limit(1).first()
+                
+                session.last_ai_response = last_messages.content[:100] if last_messages else None
+            except Exception:
+                session.last_ai_response = None
+                
         return sessions
     except Exception as e:
         db.rollback()
