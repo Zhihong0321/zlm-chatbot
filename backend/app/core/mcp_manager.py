@@ -96,7 +96,9 @@ class MCPServerManager:
                 
             return servers_info
         except Exception as e:
+            import traceback
             print(f"Error listing servers: {e}")
+            print(f"Full traceback: {traceback.format_exc()}")
             return []
         finally:
             db.close()
