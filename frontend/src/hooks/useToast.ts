@@ -40,19 +40,34 @@ export const useToast = () => {
   return { showToast, hideToast, toasts };
 };
 
-export const ToastProvider = ({ toasts, onHide }: { toasts: Toast[]; onHide: (id: string) => void }) => {
+interface ToastProviderProps {
+  toasts: Toast[];
+  onHide: (id: string) => void;
+}
+
+export const ToastProvider = ({ toasts, onHide }: ToastProviderProps) => {
+  const getToastClasses = (type: string) => {
+    const baseClasses = 'p-4 rounded-md shadow-lg transition-all duration-300 transform';
+    switch (type) {
+      case 'success':
+        return `${baseClasses} bg-green-500 text-white`;
+      case 'error':
+        return `${baseClasses} bg-red-500 text-white`;
+      case 'warning':
+        return `${baseClasses} bg-yellow-500 text-white`;
+      case 'info':
+        return `${baseClasses} bg-blue-500 text-white`;
+      default:
+        return `${baseClasses} bg-blue-500 text-white`;
+    }
+  };
+
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
       {toasts.map(toast => (
         <div
           key={toast.id}
-          className={`
-            p-4 rounded-md shadow-lg transition-all duration-300 transform
-            ${toast.type === 'success' ? 'bg-green-500 text-white' : ''}
-            ${toast.type === 'error' ? 'bg-red-500 text-white' : ''}
-            ${toast.type === 'warning' ? 'bg-yellow-500 text-white' : ''}
-            ${toast.type === 'info' ? 'bg-blue-500 text-white' : ''}
-          `}
+          className={getToastClasses(toast.type)}
         >
           <div className="flex justify-between items-center">
             <span>{toast.message}</span>
