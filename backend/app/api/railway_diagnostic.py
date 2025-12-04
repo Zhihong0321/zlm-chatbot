@@ -202,6 +202,16 @@ def fix_schema_brute_force():
         except Exception as e:
             results.append(f"Failed mcp_server_responses: {e}")
         
+        # Add missing columns to mcp_servers table
+        try:
+            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS arguments JSONB DEFAULT '[]';")
+            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS environment JSONB DEFAULT '{}';")
+            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS working_directory VARCHAR(1000) DEFAULT '';")
+            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS health_check_interval INTEGER DEFAULT 30;")
+            results.append("Added missing columns to mcp_servers table")
+        except Exception as e:
+            results.append(f"Failed to add columns: {e}")
+
         # Verify mcp_servers table creation
         try:
             cursor.execute("SELECT COUNT(*) FROM mcp_servers")
