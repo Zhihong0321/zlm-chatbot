@@ -67,26 +67,10 @@ class MCPServerManager:
             for row in result:
                 server_data = dict(row)
                 
-                # Try to get JSON columns if they exist
-                try:
-                    json_result = db.execute(text("""
-                        SELECT arguments, environment, working_directory
-                        FROM mcp_servers WHERE id = :id
-                    """), {"id": server_data['id']}).first()
-                    
-                    if json_result:
-                        server_data['arguments'] = json.loads(json_result[0] or '[]')
-                        server_data['environment'] = json.loads(json_result[1] or '{}')
-                        server_data['working_directory'] = json_result[2] or ''
-                    else:
-                        server_data['arguments'] = []
-                        server_data['environment'] = {}
-                        server_data['working_directory'] = ''
-                except:
-                    # Fallback values if JSON columns don't exist
-                    server_data['arguments'] = []
-                    server_data['environment'] = {}
-                    server_data['working_directory'] = ''
+                # Set default JSON values - avoid querying JSON columns that might not exist
+                server_data['arguments'] = []
+                server_data['environment'] = {}
+                server_data['working_directory'] = ''
                 
                 # Override status from local cache if process is managed by this instance
                 sid = server_data['id']
