@@ -131,3 +131,108 @@ def test_mcp_compatibility():
                 "compatible": False
             }
         }
+
+@router.get("/database/mcp-status")
+def check_mcp_database_status(db: Session = Depends(get_db)):
+    """
+    Comprehensive MCP database status check
+    """
+    try:
+        # Check database connection
+        db.execute(text("SELECT 1"))
+        
+        # Check MCP tables
+        mcp_tables_result = db.execute(text("""
+            SELECT COUNT(*) FROM information_schema.tables 
+            WHERE table_schema='public' AND table_name LIKE 'mcp_%'
+        """)).scalar()
+        
+        # Check MCP-specific columns
+        tools_column = db.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name='chat_messages' 
+                AND column_name='tools_used'
+            )
+        """)).scalar()
+        
+        mcp_responses_column = db.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name='chat_messages' 
+                AND column_name='mcp_server_responses'
+            )
+        """)).scalar()
+        
+        # Check agents table changes
+        agents_mcp_column = db.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name='agents' 
+                AND column_name='mcp_servers'
+            )
+        """)).scalar()
+        
+        # Count MCP servers if table exists
+        mcp_server_count = 0
+        try:
+            mcp_server_count = db.execute(text("SELECT COUNT(*) FROM mcp_servers")).scalar()
+        except:
+            pass
+        
+        # Validate schema completeness
+        required_tables = ['mcp_servers', 'mcp_server_logs', 'agent_mcp_servers', 'mcp_tool_usage']
+        found_tables = []
+        
+        for table in required_tables:
+            try:
+                db.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                found_tables.append(table)
+            except:
+                pass
+        
+        schema_complete = (
+            len(found_tables) == len(required_tables) and
+            tools_column and
+            mcp_responses_column and
+            agents_mcp_column
+        )
+        
+        return {
+            "status": "healthy" if schema_complete else "incomplete",
+            "database_connection": "✅ Working",
+            "mcp_tables": {
+                "found": mcp_tables_result,
+                "required": len(required_tables),
+                "complete": len(found_tables) == len(required_tables),
+                "missing": list(set(required_tables) - set(found_tables))
+            },
+            "mcp_columns": {
+                "tools_used": "✅ Present" if tools_column else "❌ Missing",
+                "mcp_server_responses": "✅ Present" if mcp_responses_column else "❌ Missing"
+            },
+            "agents_table": {
+                "mcp_column": "✅ Present" if agents_mcp_column else "❌ Missing"
+            },
+            "mcp_servers_count": mcp_server_count,
+            "schema_ready": schema_complete,
+            "migration_status": "✅ Complete" if schema_complete else "❌ Required",
+            "recommendations": [] if schema_complete else [
+                "Run 'alembic upgrade head' to apply missing migrations",
+                "Check Railway PostgreSQL provisioning",
+                "Verify DATABASE_URL environment variable"
+            ]
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "database_connection": "❌ Failed",
+            "error": str(e),
+            "migration_status": "❌ Cannot Validate",
+            "recommendations": [
+                "Check DATABASE_URL environment variable",
+                "Verify Railway PostgreSQL is running",
+                "Run manual migration: alembic upgrade head"
+            ]
+        }

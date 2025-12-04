@@ -57,8 +57,49 @@ def check_db_connection():
     try:
         with engine.connect() as conn:
             from sqlalchemy import text
+            # Test basic connection
             conn.execute(text("SELECT 1"))
-        logger.info("Database connection healthy")
+            logger.info("Database connection healthy")
+            
+            # Test MCP schema exists
+            try:
+                mcp_tables_result = conn.execute(text("""
+                    SELECT COUNT(*) FROM information_schema.tables 
+                    WHERE table_schema='public' 
+                    AND table_name LIKE 'mcp_%'
+                """)).scalar()
+                logger.info(f"MCP tables found: {mcp_tables_result}")
+                
+                # Test critical MCP columns exist
+                tools_column = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='chat_messages' 
+                        AND column_name='tools_used'
+                    )
+                """)).scalar()
+                
+                mcp_responses_column = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name='chat_messages' 
+                        AND column_name='mcp_server_responses'
+                    )
+                """)).scalar()
+                
+                logger.info(f"MCP tools_used column exists: {tools_column}")
+                logger.info(f"MCP mcp_server_responses column exists: {mcp_responses_column}")
+                
+                # Validate MCP schema completeness
+                schema_ready = mcp_tables_result >= 4 and tools_column and mcp_responses_column
+                if schema_ready:
+                    logger.info("✅ MCP database schema is ready")
+                else:
+                    logger.warning("⚠️ MCP database schema is incomplete")
+                
+            except Exception as e:
+                logger.warning(f"MCP schema validation failed: {e}")
+                
         return True
     except Exception as e:
         logger.error(f"Database connection failed: {e}")

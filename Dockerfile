@@ -32,5 +32,11 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 ENV PYTHONPATH=/app
 ENV PORT=8000
 
-# Start command - Run migrations then start app
-CMD cd backend && alembic upgrade head && cd .. && python app.py
+# Start command - Enhanced with robust migration handling
+CMD sh -c "cd backend && echo 'Starting MCP database setup...' && \
+    echo 'DATABASE_URL: $DATABASE_URL' && \
+    echo 'Running Alembic migrations...' && \
+    alembic upgrade head --verbose && \
+    echo 'Migration completed, checking MCP schema...' && \
+    cd .. && echo 'Starting application...' && \
+    python app.py"

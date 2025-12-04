@@ -17,23 +17,26 @@ depends_on = None
 
 def upgrade() -> None:
     # Add missing MCP columns to chat_messages table
-    conn = op.get_bind()
     
-    # Check if tools_used column exists, if not add it
+    # Add tools_used column if it doesn't exist
     try:
-        conn.execute(sa.text("SELECT tools_used FROM chat_messages LIMIT 1"))
-        print("tools_used column already exists")
-    except:
-        print("Adding tools_used column")
         op.add_column('chat_messages', sa.Column('tools_used', sa.JSON(), nullable=True, comment='List of MCP tools used in this message'))
+        print("✅ Added tools_used column to chat_messages")
+    except sa.exc.ProgrammingError as e:
+        if "already exists" in str(e):
+            print("✅ tools_used column already exists in chat_messages")
+        else:
+            raise
     
-    # Check if mcp_server_responses column exists, if not add it
+    # Add mcp_server_responses column if it doesn't exist
     try:
-        conn.execute(sa.text("SELECT mcp_server_responses FROM chat_messages LIMIT 1"))
-        print("mcp_server_responses column already exists")
-    except:
-        print("Adding mcp_server_responses column")
         op.add_column('chat_messages', sa.Column('mcp_server_responses', sa.JSON(), nullable=True, comment='MCP server responses associated with this message'))
+        print("✅ Added mcp_server_responses column to chat_messages")
+    except sa.exc.ProgrammingError as e:
+        if "already exists" in str(e):
+            print("✅ mcp_server_responses column already exists in chat_messages")
+        else:
+            raise
 
 
 def downgrade() -> None:

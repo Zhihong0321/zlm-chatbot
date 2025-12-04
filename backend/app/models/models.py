@@ -53,7 +53,7 @@ class ChatMessage(Base):
     __tablename__ = "chat_messages"
     
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id", nullable=False)
     role = Column(String(20), nullable=False)  # 'user', 'assistant', 'system'
     content = Column(Text, nullable=False)
     model = Column(String(50))
