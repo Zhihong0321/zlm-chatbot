@@ -112,9 +112,9 @@ def run_migrations_only():
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
-@router.post("/fix-schema-brute-force")
-def fix_schema_brute_force():
-    """Force create columns via raw SQL"""
+@router.post("/fix-mcp-tables-properly")
+def fix_mcp_tables_properly():
+    """PROPERLY fix MCP tables by recreating with correct schema"""
     try:
         db_url = os.getenv("DATABASE_URL")
         if not db_url:
@@ -127,112 +127,84 @@ def fix_schema_brute_force():
         
         results = []
         
-        # 0. Create mcp_servers table FIRST (this is the missing table!)
+        # STEP 1: Drop the incomplete mcp_servers table completely
         try:
-            # Try simplified table creation first
+            cursor.execute("DROP TABLE IF EXISTS mcp_servers CASCADE;")
+            results.append("Dropped incomplete mcp_servers table")
+        except Exception as e:
+            results.append(f"Failed to drop table: {e}")
+        
+        # STEP 2: Create mcp_servers table with COMPLETE CORRECT schema
+        try:
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS mcp_servers (
+                CREATE TABLE mcp_servers (
                     id VARCHAR(255) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
-                    description TEXT,
-                    command VARCHAR(500),
-                    enabled BOOLEAN,
-                    auto_start BOOLEAN,
-                    status VARCHAR(20),
+                    description TEXT DEFAULT '',
+                    command VARCHAR(500) NOT NULL,
+                    arguments JSONB DEFAULT '[]',
+                    environment JSONB DEFAULT '{}',
+                    working_directory VARCHAR(1000) DEFAULT '',
+                    enabled BOOLEAN DEFAULT TRUE,
+                    auto_start BOOLEAN DEFAULT TRUE,
+                    health_check_interval INTEGER DEFAULT 30,
+                    status VARCHAR(20) DEFAULT 'stopped',
                     process_id INTEGER,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
             """)
             
-            # Add additional columns separately if needed
-            try:
-                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS arguments JSONB DEFAULT '[]';")
-            except:
-                pass
-            try:
-                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS environment JSONB DEFAULT '{}';")
-            except:
-                pass
-            try:
-                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS working_directory VARCHAR(1000) DEFAULT '';")
-            except:
-                pass
-            try:
-                cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS health_check_interval INTEGER DEFAULT 30;")
-            except:
-                pass
-            
             # Create indexes
-            cursor.execute("CREATE INDEX IF NOT EXISTS ix_mcp_servers_enabled ON mcp_servers(enabled);")
-            cursor.execute("CREATE INDEX IF NOT EXISTS ix_mcp_servers_status ON mcp_servers(status);")
+            cursor.execute("CREATE INDEX ix_mcp_servers_enabled ON mcp_servers(enabled);")
+            cursor.execute("CREATE INDEX ix_mcp_servers_status ON mcp_servers(status);")
             
-            # Insert test MCP server
-            try:
-                cursor.execute("""
-                    INSERT INTO mcp_servers (id, name, description, command, arguments, environment, working_directory, enabled, auto_start, health_check_interval, status)
-                    VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', '["hello"]', '{}', '/app', TRUE, FALSE, 30, 'stopped')
-                    ON CONFLICT (id) DO UPDATE SET 
-                        name = EXCLUDED.name,
-                        description = EXCLUDED.description,
-                        updated_at = CURRENT_TIMESTAMP;
-                """)
-                results.append("Test server inserted")
-            except Exception as insert_error:
-                # Fallback to simple INSERT if columns missing
-                try:
-                    cursor.execute("""
-                        INSERT INTO mcp_servers (id, name, description, command, enabled, auto_start, status)
-                        VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', FALSE, FALSE, 'stopped')
-                        ON CONFLICT (id) DO UPDATE SET 
-                            name = EXCLUDED.name,
-                            description = EXCLUDED.description,
-                            updated_at = CURRENT_TIMESTAMP;
-                    """)
-                    results.append("Test server inserted (simple version)")
-                except Exception as fallback_error:
-                    results.append(f"Failed to insert test server: {fallback_error}")
-            
-            results.append("Created mcp_servers table with test server")
+            results.append("Created complete mcp_servers table with all required columns")
         except Exception as e:
-            results.append(f"Failed mcp_servers table: {e}")
+            results.append(f"Failed to create complete table: {e}")
+            conn.close()
+            return {"status": "error", "results": results}
         
-        # 1. Add mcp_servers to agents
+        # STEP 3: Insert test MCP server with ALL fields
+        try:
+            cursor.execute("""
+                INSERT INTO mcp_servers (id, name, description, command, arguments, environment, working_directory, enabled, auto_start, health_check_interval, status)
+                VALUES ('test-1', 'Test Server', 'A test MCP server for validation', 'echo', '["hello"]', '{}', '/app', TRUE, FALSE, 30, 'stopped');
+            """)
+            results.append("Inserted test server with complete schema")
+        except Exception as e:
+            results.append(f"Failed to insert test server: {e}")
+        
+        # STEP 4: Add other required columns to existing tables
         try:
             cursor.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS mcp_servers JSON;")
-            results.append("Added mcp_servers to agents")
-        except Exception as e:
-            results.append(f"Failed agents: {e}")
-
-        # 2. Add tools_used to chat_messages
-        try:
             cursor.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS tools_used JSON;")
-            results.append("Added tools_used to chat_messages")
-        except Exception as e:
-            results.append(f"Failed tools_used: {e}")
-
-        # 3. Add mcp_server_responses to chat_messages
-        try:
             cursor.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mcp_server_responses JSON;")
-            results.append("Added mcp_server_responses to chat_messages")
+            results.append("Added MCP columns to agents and chat_messages tables")
         except Exception as e:
-            results.append(f"Failed mcp_server_responses: {e}")
+            results.append(f"Failed to add MCP columns: {e}")
         
-        # Add missing columns to mcp_servers table
+        # STEP 5: Verify the table has correct structure
         try:
-            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS arguments JSONB DEFAULT '[]';")
-            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS environment JSONB DEFAULT '{}';")
-            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS working_directory VARCHAR(1000) DEFAULT '';")
-            cursor.execute("ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS health_check_interval INTEGER DEFAULT 30;")
-            results.append("Added missing columns to mcp_servers table")
-        except Exception as e:
-            results.append(f"Failed to add columns: {e}")
-
-        # Verify mcp_servers table creation
-        try:
-            cursor.execute("SELECT COUNT(*) FROM mcp_servers")
-            server_count = cursor.fetchone()[0]
-            results.append(f"Verification: {server_count} servers in mcp_servers table")
+            cursor.execute("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'mcp_servers' 
+                ORDER BY ordinal_position;
+            """)
+            columns = cursor.fetchall()
+            results.append(f"Table columns: {[col[0] for col in columns]}")
+            
+            # Test a query like the MCP manager would use
+            cursor.execute("""
+                SELECT id, name, description, command, arguments, environment, 
+                       working_directory, enabled, auto_start, health_check_interval,
+                       status, process_id, created_at, updated_at 
+                FROM mcp_servers
+            """)
+            servers = cursor.fetchall()
+            results.append(f"MCP manager query test: {len(servers)} servers found")
+            
         except Exception as e:
             results.append(f"Verification failed: {e}")
             
