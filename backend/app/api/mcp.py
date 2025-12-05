@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, Body
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import asyncio
+from pathlib import Path
 
 # Import MCP Manager
 from app.core.mcp_manager import mcp_manager
@@ -14,6 +15,11 @@ from app.core.mcp_manager import mcp_manager
 router = APIRouter()
 
 # Pydantic Models
+class MCPFile(BaseModel):
+    path: str = Field(..., description="Relative file path under working_directory")
+    content: str = Field(..., description="UTF-8 text content to write")
+
+
 class MCPServerCreate(BaseModel):
     name: str = Field(..., description="Server name")
     description: str = Field(..., description="Server description")
@@ -24,6 +30,7 @@ class MCPServerCreate(BaseModel):
     enabled: Optional[bool] = Field(default=True, description="Whether server is enabled")
     auto_start: Optional[bool] = Field(default=True, description="Whether to auto-start server")
     health_check_interval: Optional[int] = Field(default=30, description="Health check interval in seconds")
+    files: Optional[List[MCPFile]] = Field(default=None, description="Optional files to create under working_directory")
 
 class MCPServerUpdate(BaseModel):
     name: Optional[str] = Field(default=None, description="Server name")
@@ -78,7 +85,16 @@ async def list_servers(
 @router.post("/servers", response_model=Dict[str, Any])
 async def add_server(server_config: MCPServerCreate):
     """Add a new MCP server"""
-    result = mcp_manager.add_server(server_config.dict())
+    working_dir = _resolve_working_dir(server_config.working_directory)
+
+    if server_config.files:
+        _write_files(working_dir, server_config.files)
+
+    payload = server_config.dict()
+    payload.pop("files", None)
+    payload["working_directory"] = str(working_dir)
+
+    result = mcp_manager.add_server(payload)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["error"])
@@ -264,3 +280,30 @@ async def health_check():
             "enabled": len(enabled)
         }
     }
+
+
+# Helpers
+def _resolve_working_dir(working_directory: Optional[str]) -> Path:
+    base = Path.cwd()
+    if working_directory:
+        wd = Path(working_directory)
+        if not wd.is_absolute():
+            wd = base / wd
+    else:
+        wd = base
+    return wd.resolve()
+
+
+def _write_files(working_dir: Path, files: List[MCPFile]):
+    working_dir.mkdir(parents=True, exist_ok=True)
+    base = working_dir.resolve()
+
+    for file in files:
+        target = (working_dir / file.path).resolve()
+        try:
+            target.relative_to(base)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"File path escapes working_directory: {file.path}")
+
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(file.content, encoding="utf-8")

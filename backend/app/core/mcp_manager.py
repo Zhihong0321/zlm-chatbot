@@ -14,6 +14,7 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, asdict
 from sqlalchemy import text
 from app.db.database import SessionLocal
+from pathlib import Path
 
 @dataclass
 class MCPServerConfig:
@@ -56,17 +57,15 @@ class MCPServerManager:
         """List all MCP servers with their status"""
         db = self._get_db()
         try:
-            # Query ALL actual columns from database
             result = db.execute(text("""
-                SELECT id, name, description, command, arguments, environment, 
+                SELECT id, name, description, command, arguments, environment,
                        working_directory, enabled, auto_start, health_check_interval,
                        status, process_id, created_at, updated_at
                 FROM mcp_servers
             """))
-            
+
             servers_info = []
-            for row in result:
-                # Convert SQLAlchemy Row to dict
+            for row in result.mappings():
                 server_data = dict(row)
                 
                 # Handle JSON columns that might be strings
@@ -128,6 +127,7 @@ class MCPServerManager:
             # Prepare data
             arguments = json.dumps(server_config.get('arguments', []))
             environment = json.dumps(server_config.get('environment', {}))
+            working_directory = self._normalize_working_directory(server_config.get('working_directory'))
             
             query = text("""
                 INSERT INTO mcp_servers 
@@ -145,7 +145,7 @@ class MCPServerManager:
                 "command": server_config['command'],
                 "arguments": arguments,
                 "environment": environment,
-                "working_directory": server_config.get('working_directory'),
+                "working_directory": working_directory,
                 "enabled": server_config.get('enabled', True),
                 "auto_start": server_config.get('auto_start', True),
                 "health_check_interval": server_config.get('health_check_interval', 30)
@@ -218,6 +218,8 @@ class MCPServerManager:
             for key, value in updates.items():
                 if key in ['arguments', 'environment']:
                     value = json.dumps(value)
+                if key == 'working_directory':
+                    value = self._normalize_working_directory(value)
                 
                 fields.append(f"{key} = :{key}")
                 params[key] = value
@@ -275,6 +277,23 @@ class MCPServerManager:
             
         if not server['enabled']:
             return {"success": False, "error": "Server is disabled"}
+
+        working_directory = self._normalize_working_directory(server.get('working_directory'))
+        script_path = None
+
+        # If first argument looks like a script path, ensure it exists within working_directory
+        if server.get('arguments'):
+            first_arg = server['arguments'][0]
+            if isinstance(first_arg, str) and ('.' in first_arg or '/' in first_arg or '\\' in first_arg):
+                candidate = (Path(working_directory) / first_arg).resolve()
+                try:
+                    candidate.relative_to(Path(working_directory))
+                except ValueError:
+                    return {"success": False, "error": "Script path escapes working_directory"}
+                if not candidate.exists():
+                    return {"success": False, "error": f"Entrypoint not found: {candidate}"}
+                script_path = str(candidate)
+                server['arguments'][0] = script_path
             
         # Update local status
         self.status_cache[server_id] = "starting"
@@ -294,7 +313,7 @@ class MCPServerManager:
                 stderr=subprocess.PIPE,
                 text=True,
                 env=env,
-                cwd=server['working_directory'] or os.getcwd()
+                cwd=working_directory
             )
             
             # Wait a moment for process to initialize
@@ -419,6 +438,13 @@ class MCPServerManager:
             "failed": failed,
             "message": f"Started {len(started)} servers"
         }
+
+    # Internal helpers
+    def _normalize_working_directory(self, working_directory: Optional[str]) -> str:
+        base = Path(working_directory) if working_directory else Path(os.getcwd())
+        base = base.resolve()
+        base.mkdir(parents=True, exist_ok=True)
+        return str(base)
 
 # Global instance
 mcp_manager = MCPServerManager()
