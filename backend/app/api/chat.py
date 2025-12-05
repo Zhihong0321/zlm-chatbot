@@ -279,7 +279,6 @@ def chat_with_agent(request: ChatRequest, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        import logging
         logging.getLogger(__name__).error(f"Internal chat error (playground): {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
