@@ -33,7 +33,7 @@ def test_backend_apis():
     # Test MCP Management API (port 8001)
     print("\n2. Testing MCP Management API (Port 8001):")
     try:
-        response = requests.get("http://localhost:8001/api/v1/mcp/health", timeout=5)
+        response = requests.get("http://localhost:8000/api/v1/mcp/health", timeout=5)
         if response.status_code == 200:
             print("✅ MCP Management API: Working")
         else:
@@ -54,7 +54,7 @@ def test_mcp_system_status():
         import requests
         
         # Get system status
-        response = requests.get("http://localhost:8001/api/v1/mcp/status")
+        response = requests.get("http://localhost:8000/api/v1/mcp/status")
         if response.status_code == 200:
             status = response.json()
             
@@ -80,7 +80,7 @@ def test_mcp_endpoints():
     try:
         import requests
         
-        base_url = "http://localhost:8001/api/v1/mcp"
+        base_url = "http://localhost:8000/api/v1/mcp"
         
         endpoints = [
             ("GET", "/servers", "List MCP servers"),

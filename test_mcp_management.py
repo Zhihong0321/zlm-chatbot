@@ -384,10 +384,10 @@ async def main():
         print("\nDeploy the management API:")
         print("  python mcp_management_api.py")
         print("\nExample API calls:")
-        print("  GET  http://localhost:8001/api/v1/mcp/servers")
-        print("  POST http://localhost:8001/api/v1/mcp/servers")
-        print("  POST http://localhost:8001/api/v1/mcp/servers/{{id}}/start")
-        print("  GET  http://localhost:8001/api/v1/mcp/status")
+        print("  GET  http://localhost:8000/api/v1/mcp/servers")
+        print("  POST http://localhost:8000/api/v1/mcp/servers")
+        print("  POST http://localhost:8000/api/v1/mcp/servers/{{id}}/start")
+        print("  GET  http://localhost:8000/api/v1/mcp/status")
         
     else:
         print(f"\nPARTIAL SUCCESS: {success_rate:.1f}% of tests passed")

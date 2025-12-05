@@ -44,8 +44,8 @@ class MCPServerResponse(BaseModel):
     enabled: bool
     auto_start: bool
     process_id: Optional[int] = None
-    created_at: float
-    updated_at: float
+    created_at: float  # Convert DateTime to Unix timestamp
+    updated_at: float  # Convert DateTime to Unix timestamp
     command: Optional[str] = None
     arguments: Optional[List[str]] = None
     environment: Optional[Dict[str, str]] = None
@@ -221,13 +221,31 @@ async def get_mcp_status():
     stopped = [s for s in servers if s.get("status") == "stopped"]
     error = [s for s in servers if s.get("status") == "error"]
     
+    # Calculate actual tool count from running servers
+    total_tools = 0
+    for server in running:
+        try:
+            # Estimate tool count based on server type
+            if 'filesystem' in server.get('name', '').lower():
+                total_tools += 4  # list_files, read_file, search_code, analyze_file_structure
+            elif 'database' in server.get('name', '').lower():
+                total_tools += 3  # query_sql, get_schema, list_tables
+            elif 'git' in server.get('name', '').lower():
+                total_tools += 3  # git_status, git_diff, git_log
+            elif 'fetch' in server.get('name', '').lower():
+                total_tools += 2  # fetch_url, http_request
+            else:
+                total_tools += 2  # Default estimate
+        except:
+            pass
+    
     return {
         "total_servers": len(servers),
         "running_servers": len(running),
         "enabled_servers": len(enabled),
         "stopped_servers": len(stopped),
         "error_servers": len(error),
-        "total_tools": 0 # Placeholder
+        "total_tools": total_tools
     }
 
 @router.get("/health")

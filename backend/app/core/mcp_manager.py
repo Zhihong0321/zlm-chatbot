@@ -56,34 +56,26 @@ class MCPServerManager:
         """List all MCP servers with their status"""
         db = self._get_db()
         try:
-            # Simple fixed query with basic columns that always exist
-            # Query only essential columns that must exist
+            # Query ALL actual columns from database
             result = db.execute(text("""
-                SELECT id, name, description, command, enabled, auto_start, status
+                SELECT id, name, description, command, arguments, environment, 
+                       working_directory, enabled, auto_start, health_check_interval,
+                       status, process_id, created_at, updated_at
                 FROM mcp_servers
             """))
             
             servers_info = []
             for row in result:
-                # Simple dict conversion - this should work with SQLAlchemy RowProxy
-                try:
-                    server_data = dict(row)
-                except:
-                    # Fallback for tuple rows
-                    server_data = {
-                        'id': row[0], 'name': row[1], 'description': row[2], 
-                        'command': row[3], 'enabled': row[4], 'auto_start': row[5],
-                        'status': row[6]
-                    }
+                # Convert SQLAlchemy Row to dict
+                server_data = dict(row)
                 
-                # Add default JSON values
-                server_data['arguments'] = []
-                server_data['environment'] = {}
-                server_data['working_directory'] = ''
-                server_data['health_check_interval'] = 30
-                server_data['process_id'] = None
-                server_data['created_at'] = 0.0
-                server_data['updated_at'] = 0.0
+                # Handle JSON columns that might be strings
+                for json_field in ['arguments', 'environment']:
+                    if isinstance(server_data.get(json_field), str):
+                        try:
+                            server_data[json_field] = json.loads(server_data[json_field])
+                        except:
+                            server_data[json_field] = {} if json_field == 'environment' else []
                 
                 # Override status from local cache if process is managed by this instance
                 sid = server_data['id']
@@ -91,6 +83,21 @@ class MCPServerManager:
                     server_data['status'] = self.status_cache[sid]
                 if sid in self.pid_cache:
                     server_data['process_id'] = self.pid_cache[sid]
+                
+                # Convert DateTime to Unix timestamps for frontend compatibility
+                if server_data.get('created_at'):
+                    if hasattr(server_data['created_at'], 'timestamp'):
+                        server_data['created_at'] = server_data['created_at'].timestamp()
+                    elif isinstance(server_data['created_at'], str):
+                        from datetime import datetime
+                        server_data['created_at'] = datetime.fromisoformat(server_data['created_at']).timestamp()
+                
+                if server_data.get('updated_at'):
+                    if hasattr(server_data['updated_at'], 'timestamp'):
+                        server_data['updated_at'] = server_data['updated_at'].timestamp()
+                    elif isinstance(server_data['updated_at'], str):
+                        from datetime import datetime
+                        server_data['updated_at'] = datetime.fromisoformat(server_data['updated_at']).timestamp()
                     
                 servers_info.append(server_data)
                 
@@ -174,6 +181,21 @@ class MCPServerManager:
             if isinstance(data.get('environment'), str):
                 try: data['environment'] = json.loads(data['environment']) 
                 except: data['environment'] = {}
+                
+            # Convert DateTime to Unix timestamps for frontend compatibility
+            if data.get('created_at'):
+                if hasattr(data['created_at'], 'timestamp'):
+                    data['created_at'] = data['created_at'].timestamp()
+                elif isinstance(data['created_at'], str):
+                    from datetime import datetime
+                    data['created_at'] = datetime.fromisoformat(data['created_at']).timestamp()
+            
+            if data.get('updated_at'):
+                if hasattr(data['updated_at'], 'timestamp'):
+                    data['updated_at'] = data['updated_at'].timestamp()
+                elif isinstance(data['updated_at'], str):
+                    from datetime import datetime
+                    data['updated_at'] = datetime.fromisoformat(data['updated_at']).timestamp()
                 
             # Sync with local status
             if server_id in self.status_cache:

@@ -306,7 +306,7 @@ def main():
             print("  python backend_mcp_server.py")
             print("\nFrontend can now connect to:")
             print("  http://localhost:8000/api/v1/chat (Z.ai chat)")
-            print("  http://localhost:8001/api/v1/mcp/servers (MCP management)")
+            print("  http://localhost:8000/api/v1/mcp/servers (MCP management)")
             
         return success
         

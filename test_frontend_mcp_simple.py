@@ -30,10 +30,10 @@ def test_backend_apis():
         print("   Start with: python backend_mcp_server.py")
         return False
     
-    # Test MCP Management API (port 8001)
-    print("\n2. Testing MCP Management API (Port 8001):")
+    # Test MCP Management API (port 8000 - integrated)
+    print("\n2. Testing MCP Management API (Port 8000):")
     try:
-        response = requests.get("http://localhost:8001/api/v1/mcp/health", timeout=5)
+        response = requests.get("http://localhost:8000/api/v1/mcp/health", timeout=5)
         if response.status_code == 200:
             print("PASS: MCP Management API: Working")
         else:
@@ -41,7 +41,7 @@ def test_backend_apis():
             return False
     except Exception as e:
         print(f"FAIL: MCP Management API: Error - {e}")
-        print("   Start with: python mcp_management_api.py")
+        print("   MCP endpoints are now integrated in main backend")
         return False
     
     return True
@@ -54,7 +54,7 @@ def test_mcp_system_status():
         import requests
         
         # Get system status
-        response = requests.get("http://localhost:8001/api/v1/mcp/status")
+        response = requests.get("http://localhost:8000/api/v1/mcp/status")
         if response.status_code == 200:
             status = response.json()
             
@@ -80,7 +80,7 @@ def test_mcp_endpoints():
     try:
         import requests
         
-        base_url = "http://localhost:8001/api/v1/mcp"
+        base_url = "http://localhost:8000/api/v1/mcp"
         
         endpoints = [
             ("GET", "/servers", "List MCP servers"),

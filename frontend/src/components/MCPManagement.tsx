@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // Simple types
 interface MCPServer {
@@ -19,30 +19,41 @@ interface MCPServer {
 }
 
 // Simple API calls
-const API_BASE = 'http://localhost:8001/api/v1/mcp';
+const API_BASE = '/api/v1/mcp';
 
 export const useMCPServers = () => {
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
 
   const fetchServers = async () => {
+    // Prevent multiple simultaneous requests
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    
     try {
+      setLoading(true);
       const response = await fetch(`${API_BASE}/servers`);
       if (!response.ok) throw new Error('Failed to fetch servers');
       const data = await response.json();
       setServers(data);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 
   useEffect(() => {
     fetchServers();
     const interval = setInterval(fetchServers, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      fetchingRef.current = false; // Clear flag on unmount
+    };
   }, []);
 
   return { servers, loading, error, refetch: fetchServers };

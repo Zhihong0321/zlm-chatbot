@@ -42,7 +42,7 @@ export default function MCPManagementDashboard() {
   React.useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch('http://localhost:8001/api/v1/mcp/status');
+        const response = await fetch('/api/v1/mcp/status');
         if (response.ok) {
           const data = await response.json();
           setSystemStatus(data);
@@ -62,9 +62,9 @@ export default function MCPManagementDashboard() {
     
     try {
       const responses = await Promise.allSettled([
-        fetch('http://localhost:8001/api/v1/mcp/health'),
-        fetch('http://localhost:8001/api/v1/mcp/tools'),
-        fetch('http://localhost:8001/api/v1/demo'),
+        fetch('/api/v1/mcp/health'),
+        fetch('/api/v1/mcp/tools'),
+        fetch('/api/v1/demo'),
         fetch('/api/v1/system/test-mcp-compatibility', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
       ]);
 
@@ -104,7 +104,7 @@ export default function MCPManagementDashboard() {
   // Bulk operations
   const handleStartAll = async () => {
     try {
-      const response = await fetch('http://localhost:8001/api/v1/mcp/start-all', { method: 'POST' });
+      const response = await fetch('/api/v1/mcp/start-all', { method: 'POST' });
       const result = await response.json();
       alert(result.message);
       refetch();
@@ -115,7 +115,7 @@ export default function MCPManagementDashboard() {
 
   const handleStopAll = async () => {
     try {
-      const response = await fetch('http://localhost:8001/api/v1/mcp/stop-all', { method: 'POST' });
+      const response = await fetch('/api/v1/mcp/stop-all', { method: 'POST' });
       const result = await response.json();
       alert(result.message);
       refetch();

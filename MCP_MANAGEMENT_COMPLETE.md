@@ -46,7 +46,7 @@ Frontend → Backend → MCP Manager → MCP Servers → Z.ai GLM-4.6
 ```bash
 python mcp_management_api.py
 ```
-**Access:** http://localhost:8001
+**Access:** http://localhost:8000
 
 ### 2. Start Enhanced Z.ai Backend  
 ```bash
@@ -57,7 +57,7 @@ python backend_mcp_server.py
 ### 3. Connect Frontend
 Configure frontend to connect to both services:
 - **Chat API:** http://localhost:8000/api/v1/chat
-- **MCP Management:** http://localhost:8001/api/v1/mcp/servers
+- **MCP Management:** http://localhost:8000/api/v1/mcp/servers
 
 ---
 
@@ -88,7 +88,7 @@ Configure frontend to connect to both services:
 
 ### Add Custom MCP Server
 ```bash
-curl -X POST http://localhost:8001/api/v1/mcp/servers \
+curl -X POST http://localhost:8000/api/v1/mcp/servers \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Custom Server",
@@ -101,12 +101,12 @@ curl -X POST http://localhost:8001/api/v1/mcp/servers \
 
 ### Start Server
 ```bash
-curl -X POST http://localhost:8001/api/v1/mcp/servers/filesystem-1/start
+curl -X POST http://localhost:8000/api/v1/mcp/servers/filesystem-1/start
 ```
 
 ### Get System Status
 ```bash
-curl http://localhost:8001/api/v1/mcp/status
+curl http://localhost:8000/api/v1/mcp/status
 ```
 
 ### Chat with MCP Tools
@@ -246,7 +246,7 @@ curl http://localhost:8001/api/v1/mcp/health
 curl http://localhost:8000/health
 
 # Full system status
-curl http://localhost:8001/api/v1/mcp/status
+curl http://localhost:8000/api/v1/mcp/status
 ```
 
 ### Expected Response
@@ -334,7 +334,7 @@ python backend_mcp_server.py
 python demo_mcp_management.py
 
 # 4. Check system status
-curl http://localhost:8001/api/v1/mcp/status
+curl http://localhost:8000/api/v1/mcp/status
 ```
 
 **Your Z.ai chatbot is now a fully MCP-enabled, tool-integrated AI assistant!** 🎯
