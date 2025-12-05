@@ -14,6 +14,9 @@ from app.core.mcp_manager import mcp_manager
 
 router = APIRouter()
 
+MAX_MCP_FILE_BYTES = 5 * 1024 * 1024  # 5 MB per file
+MAX_MCP_FILES = 20
+
 # Pydantic Models
 class MCPFile(BaseModel):
     path: str = Field(..., description="Relative file path under working_directory")
@@ -295,15 +298,27 @@ def _resolve_working_dir(working_directory: Optional[str]) -> Path:
 
 
 def _write_files(working_dir: Path, files: List[MCPFile]):
+    if len(files) > MAX_MCP_FILES:
+        raise HTTPException(status_code=400, detail=f"Too many files; max {MAX_MCP_FILES}")
+
     working_dir.mkdir(parents=True, exist_ok=True)
     base = working_dir.resolve()
 
     for file in files:
+        # Basic path validation: no absolute paths
+        if Path(file.path).is_absolute():
+            raise HTTPException(status_code=400, detail=f"File path must be relative: {file.path}")
+
         target = (working_dir / file.path).resolve()
         try:
             target.relative_to(base)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"File path escapes working_directory: {file.path}")
+
+        # Size validation
+        size_bytes = len(file.content.encode("utf-8"))
+        if size_bytes > MAX_MCP_FILE_BYTES:
+            raise HTTPException(status_code=400, detail=f"File '{file.path}' exceeds {MAX_MCP_FILE_BYTES} bytes")
 
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(file.content, encoding="utf-8")
