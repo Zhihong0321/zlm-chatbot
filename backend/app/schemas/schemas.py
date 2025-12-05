@@ -60,6 +60,9 @@ class ChatMessageBase(BaseModel):
     content: str
     model: Optional[str] = None
     reasoning_content: Optional[str] = None
+    token_usage: Optional[Dict[str, Any]] = None
+    tools_used: Optional[List[Dict[str, Any]]] = None
+    mcp_server_responses: Optional[Dict[str, Any]] = None
 
 
 class ChatMessageCreate(ChatMessageBase):
