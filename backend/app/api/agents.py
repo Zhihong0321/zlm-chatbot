@@ -4,7 +4,7 @@ from typing import List
 import os
 from datetime import datetime
 from app.db.database import get_db
-from app.models.models import Agent
+from app.models.models import Agent, AgentMCPServer
 from app.schemas.schemas import (
     Agent as AgentSchema, AgentCreate, AgentUpdate, AgentWithFiles,
     AgentKnowledgeFileResponse, AgentKnowledgeFileCreate, FileUploadResponse
@@ -17,13 +17,25 @@ from app.crud.crud import (
 
 router = APIRouter()
 
+
+def _sync_agent_mcp_servers(db: Session, agent_id: int, server_ids):
+    """Replace AgentMCPServer mappings for an agent when server_ids provided."""
+    db.query(AgentMCPServer).filter(AgentMCPServer.agent_id == agent_id).delete()
+    if server_ids:
+        for sid in dict.fromkeys(server_ids):  # dedupe, preserve order
+            db.add(AgentMCPServer(agent_id=agent_id, server_id=sid, is_enabled=True))
+    db.commit()
+
 @router.get("/test")
 def test_agents_endpoint():
     return {"message": "Agents router is working"}
 
 @router.post("/", response_model=AgentSchema)
 def create_agent_endpoint(agent: AgentCreate, db: Session = Depends(get_db)):
-    return create_agent(db=db, agent=agent)
+    created = create_agent(db=db, agent=agent)
+    if agent.mcp_servers is not None:
+        _sync_agent_mcp_servers(db, created.id, agent.mcp_servers)
+    return created
 
 
 @router.get("/", response_model=List[AgentSchema])
@@ -77,6 +89,8 @@ def update_agent_endpoint(agent_id: int, agent: AgentUpdate, db: Session = Depen
     db_agent = update_agent(db, agent_id=agent_id, agent=agent)
     if db_agent is None:
         raise HTTPException(status_code=404, detail="Agent not found")
+    if agent.mcp_servers is not None:
+        _sync_agent_mcp_servers(db, agent_id, agent.mcp_servers)
     return db_agent
 
 
