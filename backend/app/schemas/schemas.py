@@ -9,6 +9,7 @@ class AgentBase(BaseModel):
     system_prompt: str
     model: str = "glm-4.5"
     temperature: float = Field(0.7, ge=0, le=2)
+    mcp_servers: Optional[List[str]] = None
 
 
 class AgentCreate(AgentBase):
@@ -21,6 +22,7 @@ class AgentUpdate(BaseModel):
     system_prompt: Optional[str] = None
     model: Optional[str] = None
     temperature: Optional[float] = Field(None, ge=0, le=2)
+    mcp_servers: Optional[List[str]] = None
 
 
 class Agent(AgentBase):
