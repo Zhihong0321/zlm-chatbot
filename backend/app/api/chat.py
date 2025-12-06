@@ -19,6 +19,13 @@ _BILL_CACHE = None
 router = APIRouter()
 
 
+def _as_http_exception(e: Exception) -> HTTPException:
+    text = str(e)
+    if "Too many API requests" in text or "'code': '1305'" in text or "status code: 429" in text or "Error code: 429" in text:
+        return HTTPException(status_code=429, detail="Rate limit: too many API requests, please retry shortly")
+    return HTTPException(status_code=500, detail=f"AI service error: {text}")
+
+
 def chat_with_zai(*, message: str, system_prompt: str, model: str, temperature: float) -> Dict[str, Any]:
     client = get_zai_client()
     messages = []
@@ -103,12 +110,10 @@ def send_message(
             
             return db_assistant_message
         except Exception as e:
-            # Rollback is handled by global exception handler or dependency if not done here
-            # But explicit is better for transaction errors
             db.rollback()
             import logging
             logging.getLogger(__name__).error(f"Chat error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Chat processing error: {str(e)}")
+            raise _as_http_exception(e)
     except HTTPException:
         # HTTP exceptions are fine, just re-raise
         raise
@@ -295,7 +300,7 @@ def chat_with_agent(request: ChatRequest, db: Session = Depends(get_db)):
             raise
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+            raise _as_http_exception(e)
             
     except HTTPException:
         raise
