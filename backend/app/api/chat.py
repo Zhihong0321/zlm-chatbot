@@ -13,10 +13,32 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-BILLING_SERVER_IDS = {"billing-auto", "billing-1", "6a98396f-83de-441c-9a39-5c785e1d0230"}
+BILLING_SERVER_IDS = {"billing-auto", "billing-1", "billing-v2", "6a98396f-83de-441c-9a39-5c785e1d0230"}
 _BILL_CACHE = None
 
 router = APIRouter()
+
+
+def chat_with_zai(*, message: str, system_prompt: str, model: str, temperature: float) -> Dict[str, Any]:
+    client = get_zai_client()
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": message})
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+    )
+
+    msg = response.choices[0].message
+    return {
+        "content": msg.content or msg.reasoning_content or "",
+        "reasoning_content": msg.reasoning_content,
+        "model": model,
+        "token_usage": response.usage.model_dump() if response.usage else None,
+    }
 
 
 @router.post("/{session_id}/messages", response_model=ChatMessageSchema)
@@ -294,6 +316,9 @@ def _build_tools_for_agent(db: Session, agent) -> (List[Dict[str, Any]], Dict[st
         if server.id in BILLING_SERVER_IDS or (server.name and "billing" in server.name.lower()):
             tools.extend(_billing_tools())
 
+    if not tools:
+        tools.extend(_billing_tools())
+
     return tools, server_map
 
 
@@ -347,6 +372,30 @@ def _billing_tools() -> List[Dict[str, Any]]:
                     "required": ["kwh"]
                 }
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "calculate_solar_impact",
+                "description": "Calculate solar savings, new payable, and system details based on monthly bill.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "rm": {"type": "number", "description": "Monthly TNB Bill in RM"},
+                        "morning_usage_percentage": {
+                            "type": "number",
+                            "description": "Percentage of usage in morning (default 30)",
+                            "default": 30
+                        },
+                        "sunpeak_hour": {
+                            "type": "number",
+                            "description": "Sun peak hours (default 3.4)",
+                            "default": 3.4
+                        }
+                    },
+                    "required": ["rm"]
+                }
+            }
         }
     ]
 
@@ -361,7 +410,7 @@ def _dispatch_tool(name: str, arguments: Dict[str, Any], server_map: Dict[str, M
                 server_id = sid
                 break
 
-    if name in {"tnb_bill_rm_to_kwh", "tnb_bill_kwh_to_rm"}:
+    if name in {"tnb_bill_rm_to_kwh", "tnb_bill_kwh_to_rm", "calculate_solar_impact"}:
         result = _execute_billing_tool(name, arguments)
         return result, server_id or "billing"
 
@@ -374,8 +423,10 @@ def _load_bill_table():
         return _BILL_CACHE
 
     candidates = [
+        Path("/app/mcp_servers/billing_server_v2/bill.json"),
         Path("/app/mcp_servers/billing_server/bill.json"),
         Path("/app/resource/bill.json"),
+        Path(__file__).resolve().parents[3] / "mcp_servers" / "billing_server_v2" / "bill.json",
         Path(__file__).resolve().parents[3] / "mcp_servers" / "billing_server" / "bill.json",
         Path(__file__).resolve().parents[3] / "resource" / "bill.json",
     ]
@@ -390,27 +441,122 @@ def _load_bill_table():
     raise RuntimeError("bill.json not found for billing MCP")
 
 
+def _bill_stats(data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    kwh_values = [float(r.get("kwh", 0)) for r in data]
+    bill_values = [float(r.get("bill", 0)) for r in data]
+    if not kwh_values or not bill_values:
+        raise ValueError("bill.json missing kwh or bill values")
+    return {
+        "min_kwh": min(kwh_values),
+        "max_kwh": max(kwh_values),
+        "min_bill": min(bill_values),
+        "max_bill": max(bill_values),
+        "min_record": min(data, key=lambda r: float(r.get("kwh", 0))),
+    }
+
+
+def _nearest_by_bill(data: List[Dict[str, Any]], rm: float, stats: Dict[str, Any]):
+    if rm < stats["min_bill"] or rm > stats["max_bill"]:
+        return None
+    return min(data, key=lambda r: abs(float(r.get("bill", 0)) - rm))
+
+
+def _nearest_by_kwh(data: List[Dict[str, Any]], kwh: float, stats: Dict[str, Any]):
+    if kwh < stats["min_kwh"]:
+        return stats["min_record"]
+    if kwh > stats["max_kwh"]:
+        return None
+    return min(data, key=lambda r: abs(float(r.get("kwh", 0)) - kwh))
+
+
+def _out_of_scope_text(stats: Dict[str, Any]) -> str:
+    return (
+        "out_of_scope: value outside bill.json range "
+        f"(kWh {stats['min_kwh']}–{stats['max_kwh']}, RM {stats['min_bill']}–{stats['max_bill']})"
+    )
+
+
+def _format_solar_impact(data: List[Dict[str, Any]], stats: Dict[str, Any], arguments: Dict[str, Any]) -> str:
+    input_rm = float(arguments.get("rm"))
+    morning_usage_pct = float(arguments.get("morning_usage_percentage", 30))
+    sunpeak_hour = float(arguments.get("sunpeak_hour", 3.4))
+    panel_rating = 0.62
+
+    record = _nearest_by_bill(data, input_rm, stats)
+    if record is None:
+        return _out_of_scope_text(stats)
+
+    total_usage = float(record.get("kwh", 0))
+    panel_qty = total_usage / 30.0 / sunpeak_hour / panel_rating
+
+    morning_ratio = max(0.0, min(100.0, morning_usage_pct)) / 100.0
+    after_solar_usage = total_usage * (1.0 - morning_ratio)
+    after_solar_record = _nearest_by_kwh(data, after_solar_usage, stats)
+    if after_solar_record is None:
+        if after_solar_usage < stats["min_kwh"]:
+            after_solar_record = stats["min_record"]
+        else:
+            return f"Error: Calculated after-solar usage {after_solar_usage:.2f} kWh is out of bill.json range."
+
+    after_solar_rm = float(after_solar_record.get("bill", 0))
+    bill_reduction_rm = input_rm - after_solar_rm
+
+    total_solar_generation_daily = panel_rating * sunpeak_hour * panel_qty
+    total_solar_generation_monthly = total_solar_generation_daily * 30.0
+
+    consumed_solar = total_usage * morning_ratio
+    export_generation = total_solar_generation_monthly - consumed_solar
+    export_income = export_generation * 0.20
+
+    total_saving = export_income + bill_reduction_rm
+    new_payable = input_rm - total_saving
+
+    return (
+        "Solar System Impact Analysis:\n"
+        "-------------------------------\n"
+        f"Input Bill: RM {input_rm:.2f} (approx. {total_usage:.2f} kWh)\n"
+        f"System Size: {panel_qty:.2f} Panels (Ref: {panel_qty * panel_rating:.2f} kWp)\n"
+        "\n"
+        "Financials:\n"
+        f"1. Bill Reduction: RM {bill_reduction_rm:.2f}\n"
+        f"   (New Bill: RM {after_solar_rm:.2f} for {after_solar_usage:.2f} kWh)\n"
+        f"2. Export Income: RM {export_income:.2f}\n"
+        f"   (Exported: {export_generation:.2f} kWh)\n"
+        "\n"
+        f"Total Monthly Saving: RM {total_saving:.2f}\n"
+        f"New Net Payable: RM {new_payable:.2f}\n"
+    )
+
+
 def _execute_billing_tool(name: str, arguments: Dict[str, Any]) -> str:
-    data = _load_bill_table()
+    try:
+        data = _load_bill_table()
+    except Exception as e:
+        return f"error loading billing data: {e}"
     if not data:
         return "out_of_scope: billing data unavailable"
 
     try:
+        stats = _bill_stats(data)
+
         if name == "tnb_bill_rm_to_kwh":
             rm = float(arguments.get("rm"))
-            rec = min(data, key=lambda r: abs(float(r.get("bill", 0)) - rm))
+            rec = _nearest_by_bill(data, rm, stats)
+            if rec is None:
+                return _out_of_scope_text(stats)
             bill_val = float(rec.get("bill", 0))
-            if abs(bill_val - rm) > bill_val * 10:  # crude guard for wild values
-                return "out_of_scope: value outside bill.json range"
             return f"{rec.get('kwh')} kWh (nearest to RM {rm:.2f}, bill entry RM {bill_val:.2f})"
 
         if name == "tnb_bill_kwh_to_rm":
             kwh = float(arguments.get("kwh"))
-            rec = min(data, key=lambda r: abs(float(r.get("kwh", 0)) - kwh))
+            rec = _nearest_by_kwh(data, kwh, stats)
+            if rec is None:
+                return _out_of_scope_text(stats)
             kwh_val = float(rec.get("kwh", 0))
-            if abs(kwh_val - kwh) > kwh_val * 10:
-                return "out_of_scope: value outside bill.json range"
             return f"RM {rec.get('bill'):.2f} (nearest to {kwh} kWh, bill entry {kwh_val} kWh)"
+
+        if name == "calculate_solar_impact":
+            return _format_solar_impact(data, stats, arguments)
     except Exception as e:
         return f"error executing billing tool: {e}"
 

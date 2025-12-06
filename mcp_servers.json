@@ -76,6 +76,42 @@
       "updated_at": 1764814991.5886014,
       "process_id": null,
       "status": "stopped"
+    },
+    {
+      "id": "billing-1",
+      "name": "Billing Server",
+      "description": "Convert RM and kWh using resource/bill.json",
+      "command": "python",
+      "arguments": [
+        "main.py"
+      ],
+      "environment": {},
+      "working_directory": "E:\\oneapi\\mcp_servers\\billing_server",
+      "enabled": true,
+      "auto_start": false,
+      "health_check_interval": 30,
+      "created_at": null,
+      "updated_at": null,
+      "process_id": null,
+      "status": "stopped"
+    },
+    {
+      "id": "billing-v2",
+      "name": "Billing Server V2",
+      "description": "Billing tools (RM, kWh, solar impact) using resource/bill.json",
+      "command": "python",
+      "arguments": [
+        "main.py"
+      ],
+      "environment": {},
+      "working_directory": "E:\\oneapi\\mcp_servers\\billing_server_v2",
+      "enabled": true,
+      "auto_start": false,
+      "health_check_interval": 30,
+      "created_at": null,
+      "updated_at": null,
+      "process_id": null,
+      "status": "stopped"
     }
   ],
   "last_updated": 1764815080.4312766
