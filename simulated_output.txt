@@ -1,0 +1,13 @@
+Solar System Impact Analysis:
+-------------------------------
+Input Bill: RM 600.11 (approx. 1254.00 kWh)
+System Size: 19.83 Panels (Ref: 12.29 kWp)
+
+Financials:
+1. Bill Reduction: RM 192.01
+   (New Bill: RM 408.10 for 877.80 kWh)
+2. Export Income: RM 175.56
+   (Exported: 877.80 kWh)
+
+Total Monthly Saving: RM 367.57
+New Net Payable: RM 232.54
